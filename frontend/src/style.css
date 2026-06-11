@@ -1,0 +1,244 @@
+/* 全局样式：统一盒模型，避免宽高计算混乱。 */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: #172033;
+  background: #f4f7fb;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+/* 后台系统外层布局：左侧菜单 + 右侧内容区。 */
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* 左侧菜单栏，后续会放更多系统模块入口。 */
+.sidebar {
+  width: 220px;
+  padding: 24px 16px;
+  color: #ffffff;
+  background: #1f2a44;
+}
+
+.brand {
+  margin-bottom: 28px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.menu {
+  display: grid;
+  gap: 8px;
+}
+
+.menu-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: #c9d3e6;
+}
+
+.menu-item.active {
+  color: #ffffff;
+  background: #3a74ff;
+}
+
+/* 右侧内容区：承载具体后台页面。 */
+.content {
+  flex: 1;
+  padding: 28px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #5c6f91;
+  font-size: 13px;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+}
+
+h2 {
+  font-size: 18px;
+}
+
+.refresh-button,
+.secondary-button {
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  background: #2563eb;
+  cursor: pointer;
+}
+
+.refresh-button:hover,
+.secondary-button:hover {
+  background: #1d4ed8;
+}
+
+.secondary-button {
+  color: #1f2a44;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+}
+
+.secondary-button:hover {
+  background: #f8fafc;
+}
+
+/* 内容面板：展示接口请求结果和用户表格。 */
+.panel {
+  max-width: 920px;
+  padding: 24px;
+  border: 1px solid #dbe3f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.status-panel {
+  margin-bottom: 20px;
+}
+
+.table-panel {
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.status {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.muted {
+  color: #64748b;
+}
+
+.success {
+  color: #047857;
+  font-weight: 700;
+}
+
+.error {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 8px 16px;
+  margin: 18px 0 0;
+}
+
+dt {
+  color: #64748b;
+}
+
+dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* 表格外层支持横向滚动，保证手机上不会挤坏布局。 */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 13px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  color: #475569;
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+td {
+  color: #172033;
+  font-size: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge.enabled {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.badge.disabled {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+/* 手机屏幕下改成上下布局，避免左侧菜单挤压内容。 */
+@media (max-width: 720px) {
+  .admin-shell {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .content {
+    padding: 20px;
+  }
+
+  .topbar,
+  .panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

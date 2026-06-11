@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <!--
+        项目专用 Maven 配置。
+
+        你的电脑用户级 Maven 配置里有一个不可用的私有镜像，
+        所以后端依赖下载会失败。这里单独给当前项目指定 Maven Central，
+        这样不会修改你电脑的全局 Maven 配置。
+    -->
+    <mirrors>
+        <mirror>
+            <id>central-direct</id>
+            <name>Maven Central Direct</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <mirrorOf>central</mirrorOf>
+        </mirror>
+    </mirrors>
+</settings>

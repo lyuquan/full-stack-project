@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        Spring Boot 父工程：
+        它帮我们统一管理 Spring Boot 相关依赖版本，初学阶段不用手动处理很多 jar 包版本冲突。
+        这里选择 2.7.18，是因为你当前电脑是 Java 8；Spring Boot 3.x 需要 Java 17+。
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.18</version>
+        <relativePath/>
+    </parent>
+
+    <!-- 当前后端项目的基本身份信息 -->
+    <groupId>com.example</groupId>
+    <artifactId>admin-backend</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>admin-backend</name>
+    <description>Backend service for admin system learning project</description>
+
+    <properties>
+        <!-- 指定 Java 版本，和你当前电脑的 Java 8 保持一致 -->
+        <java.version>1.8</java.version>
+    </properties>
+
+    <dependencies>
+        <!--
+            Web 启动器：
+            提供 Controller、JSON 返回、内置 Tomcat 等 Web 后端开发必需能力。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!--
+            测试启动器：
+            后续写单元测试、接口测试会用到；现在先放进来，养成项目自带测试依赖的习惯。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                Spring Boot Maven 插件：
+                让我们可以通过 mvn spring-boot:run 启动后端项目。
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
