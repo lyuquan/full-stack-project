@@ -1,9 +1,12 @@
 package com.example.admin.user.controller;
 
 import com.example.admin.common.ApiResponse;
+import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.service.UserService;
 import com.example.admin.user.vo.UserVO;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,5 +48,18 @@ public class UserController {
         List<UserVO> users = userService.listUsers();
 
         return ApiResponse.success(users);
+    }
+
+    /**
+     * 新增用户接口。
+     *
+     * 请求地址：POST /api/users
+     * @RequestBody 表示从请求体 JSON 里读取参数，并转换成 CreateUserDTO 对象。
+     */
+    @PostMapping
+    public ApiResponse<UserVO> createUser(@RequestBody CreateUserDTO createUserDTO) {
+        UserVO user = userService.createUser(createUserDTO);
+
+        return ApiResponse.success(user);
     }
 }

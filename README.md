@@ -54,6 +54,48 @@ backend/src/main/java/com/example/admin/user/vo/UserVO.java
 
 当前用户数据还没有接数据库，而是在 `UserService` 里模拟出来。这样可以先把接口分层学清楚。
 
+### 第 3 步：新增用户接口和 DTO
+
+目标：新增一个用户表单，让前端通过 POST 请求把 JSON 提交给后端。
+
+接口：
+
+```text
+POST /api/users
+```
+
+请求体示例：
+
+```json
+{
+  "username": "zhangsan",
+  "nickname": "张三",
+  "role": "运营管理员",
+  "status": "enabled"
+}
+```
+
+本步骤新增的后端文件：
+
+```text
+backend/src/main/java/com/example/admin/user/dto/CreateUserDTO.java
+```
+
+本步骤修改的后端文件：
+
+```text
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+```
+
+你需要理解：
+
+- `DTO`：Data Transfer Object，用来接收前端传给后端的请求参数。
+- `VO`：View Object，用来控制后端返回给前端的数据结构。
+- `@RequestBody`：告诉 Spring Boot 从请求体 JSON 里读取参数，并转换成 Java 对象。
+- `POST`：通常用于新增数据；`GET` 通常用于查询数据。
+- 当前新增用户只保存在内存列表里，重启后端后会恢复初始数据；后续接数据库后才会真正持久化。
+
 ## 启动后端
 
 进入后端目录：

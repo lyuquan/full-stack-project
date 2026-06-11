@@ -1,28 +1,42 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 
-// systemLoading 控制“后端连接状态”这块区域的加载状态。
+// systemLoading controls the loading state for the backend health panel.
 const systemLoading = ref(false)
 
-// systemError 保存系统接口请求失败时的错误提示。
+// systemError stores the error message when /api/system/hello fails.
 const systemError = ref('')
 
-// backendInfo 保存 /api/system/hello 返回的系统信息。
+// backendInfo stores the data returned by /api/system/hello.
 const backendInfo = ref(null)
 
-// userLoading 控制“用户列表”这块区域的加载状态。
+// userLoading controls the loading state for the user table.
 const userLoading = ref(false)
 
-// userError 保存用户列表接口请求失败时的错误提示。
+// userError stores the error message when /api/users fails.
 const userError = ref('')
 
-// users 保存后端 /api/users 返回的用户数组。
+// users stores the user array returned by the backend.
 const users = ref([])
 
+// createLoading controls the submit button state when creating a user.
+const createLoading = ref(false)
+
+// createMessage gives quick feedback after a user is created.
+const createMessage = ref('')
+
+// userForm is the form data that will be sent to POST /api/users.
+const userForm = reactive({
+  username: '',
+  nickname: '',
+  role: '运营管理员',
+  status: 'enabled'
+})
+
 /**
- * 调用后端系统接口。
+ * Load backend health information.
  *
- * 这个接口仍然用于验证前后端是否已经连通。
+ * This request verifies that the frontend can reach the Java backend.
  */
 async function loadBackendInfo() {
   systemLoading.value = true
@@ -32,14 +46,12 @@ async function loadBackendInfo() {
     const response = await fetch('/api/system/hello')
     const result = await response.json()
 
-    // 后端统一约定 code 为 200 表示业务成功。
     if (result.code === 200) {
       backendInfo.value = result.data
     } else {
       systemError.value = result.message || '系统接口返回异常'
     }
   } catch (error) {
-    // 后端没启动、代理失败、网络异常都会进入这里。
     systemError.value = '无法连接系统接口，请确认 Java 后端已经启动'
   } finally {
     systemLoading.value = false
@@ -47,10 +59,9 @@ async function loadBackendInfo() {
 }
 
 /**
- * 调用后端用户列表接口。
+ * Load the user list from the backend.
  *
- * 前端只关心请求 /api/users，Vite 会通过 proxy 转发到 Java 后端。
- * 后端返回的 data 是用户数组，赋值给 users 后，页面表格会自动更新。
+ * Vite proxy forwards /api/users to http://localhost:8080/api/users.
  */
 async function loadUsers() {
   userLoading.value = true
@@ -73,15 +84,51 @@ async function loadUsers() {
 }
 
 /**
- * 页面右上角的刷新按钮。
+ * Create a new user by submitting form data to POST /api/users.
  *
- * Promise.all 可以同时发起两个请求，比一个请求结束后再请求另一个更快。
+ * The backend uses @RequestBody CreateUserDTO to receive this JSON body.
+ */
+async function createUser() {
+  createLoading.value = true
+  createMessage.value = ''
+  userError.value = ''
+
+  try {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userForm)
+    })
+    const result = await response.json()
+
+    if (result.code === 200) {
+      createMessage.value = `已新增用户：${result.data.nickname}`
+
+      // Clear only text inputs; keep role/status defaults for faster repeated entry.
+      userForm.username = ''
+      userForm.nickname = ''
+
+      await loadUsers()
+    } else {
+      userError.value = result.message || '新增用户失败'
+    }
+  } catch (error) {
+    userError.value = '新增用户请求失败，请确认 Java 后端已经启动'
+  } finally {
+    createLoading.value = false
+  }
+}
+
+/**
+ * Refresh all page data at the same time.
  */
 function refreshPageData() {
   Promise.all([loadBackendInfo(), loadUsers()])
 }
 
-// 页面加载完成后，自动请求系统信息和用户列表。
+// Load initial data when the page is mounted.
 onMounted(() => {
   refreshPageData()
 })
@@ -101,8 +148,8 @@ onMounted(() => {
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Step 2</p>
-          <h1>用户列表接口</h1>
+          <p class="eyebrow">Step 3</p>
+          <h1>新增用户接口</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
           重新请求
@@ -127,10 +174,56 @@ onMounted(() => {
         </div>
       </section>
 
+      <section class="panel form-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">POST /api/users</p>
+            <h2>新增用户</h2>
+          </div>
+        </div>
+
+        <form class="user-form" @submit.prevent="createUser">
+          <label>
+            <span>账号</span>
+            <input v-model="userForm.username" required placeholder="例如 zhangsan" />
+          </label>
+
+          <label>
+            <span>昵称</span>
+            <input v-model="userForm.nickname" required placeholder="例如 张三" />
+          </label>
+
+          <label>
+            <span>角色</span>
+            <select v-model="userForm.role">
+              <option>超级管理员</option>
+              <option>运营管理员</option>
+              <option>只读用户</option>
+            </select>
+          </label>
+
+          <label>
+            <span>状态</span>
+            <select v-model="userForm.status">
+              <option value="enabled">启用</option>
+              <option value="disabled">禁用</option>
+            </select>
+          </label>
+
+          <button class="submit-button" type="submit" :disabled="createLoading">
+            {{ createLoading ? '提交中...' : '新增用户' }}
+          </button>
+        </form>
+
+        <p v-if="createMessage" class="status success form-message">
+          {{ createMessage }}
+        </p>
+      </section>
+
       <section class="panel table-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">Controller -> Service -> VO</p>
+            <p class="eyebrow">Controller -> Service -> DTO/VO</p>
             <h2>用户管理</h2>
           </div>
           <button class="secondary-button" type="button" @click="loadUsers">
