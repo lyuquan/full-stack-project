@@ -1,6 +1,7 @@
 package com.example.admin.user.service;
 
 import com.example.admin.common.PageResult;
+import com.example.admin.common.BusinessException;
 import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.entity.UserEntity;
@@ -85,6 +86,8 @@ public class UserService {
      * Create a new user and save it to the database.
      */
     public UserVO createUser(CreateUserDTO createUserDTO) {
+        validateUsernameNotUsed(createUserDTO.getUsername());
+
         UserEntity entity = new UserEntity();
         entity.setUsername(createUserDTO.getUsername());
         entity.setNickname(createUserDTO.getNickname());
@@ -105,6 +108,8 @@ public class UserService {
         if (!optionalUser.isPresent()) {
             return null;
         }
+
+        validateUsernameNotUsedByOtherUser(updateUserDTO.getUsername(), id);
 
         UserEntity entity = optionalUser.get();
         entity.setUsername(updateUserDTO.getUsername());
@@ -164,5 +169,28 @@ public class UserService {
                 entity.getRole(),
                 entity.getStatus()
         );
+    }
+
+    /**
+     * Validate username before creating a user.
+     *
+     * Username is a business identity, so two users cannot use the same value.
+     */
+    private void validateUsernameNotUsed(String username) {
+        if (userRepository.existsByUsername(username)) {
+            throw new BusinessException(400, "账号已存在");
+        }
+    }
+
+    /**
+     * Validate username before updating a user.
+     *
+     * Editing allows keeping the current user's username, but blocks using
+     * another user's username.
+     */
+    private void validateUsernameNotUsedByOtherUser(String username, Long currentUserId) {
+        if (userRepository.existsByUsernameAndIdNot(username, currentUserId)) {
+            throw new BusinessException(400, "账号已存在");
+        }
     }
 }

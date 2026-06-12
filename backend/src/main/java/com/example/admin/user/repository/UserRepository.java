@@ -17,6 +17,21 @@ import org.springframework.data.repository.query.Param;
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     /**
+     * Check whether a username already exists.
+     *
+     * Spring Data JPA creates the SQL automatically from the method name.
+     */
+    boolean existsByUsername(String username);
+
+    /**
+     * Check whether a username is used by another user.
+     *
+     * This is used while editing: the current user can keep their own username,
+     * but cannot change it to another user's username.
+     */
+    boolean existsByUsernameAndIdNot(String username, Long id);
+
+    /**
      * Search users by optional keyword and optional status.
      *
      * Pageable tells JPA which page and how many records should be queried.

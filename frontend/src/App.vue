@@ -537,7 +537,7 @@ onMounted(() => {
         <form class="user-form" @submit.prevent="saveUser">
           <label>
             <span>账号</span>
-            <input v-model="userForm.username" placeholder="例如 zhangsan" />
+            <input v-model="userForm.username" placeholder="唯一账号，例如 zhangsan" />
           </label>
 
           <label>

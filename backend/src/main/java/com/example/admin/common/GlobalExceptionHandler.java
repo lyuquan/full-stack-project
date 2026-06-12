@@ -25,4 +25,14 @@ public class GlobalExceptionHandler {
 
         return ApiResponse.error(400, message);
     }
+
+    /**
+     * Handle business rule errors thrown by Service.
+     *
+     * Example: username already exists -> returns { code: 400, message: "账号已存在" }.
+     */
+    @ExceptionHandler(BusinessException.class)
+    public ApiResponse<Void> handleBusinessException(BusinessException exception) {
+        return ApiResponse.error(exception.getCode(), exception.getMessage());
+    }
 }

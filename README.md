@@ -350,6 +350,44 @@ README.md
 - 单独建 `UpdateUserStatusDTO` 是为了让接口参数更清楚，也避免前端传多余字段。
 - 后端仍然要校验 `status`，不能只相信前端按钮传来的值。
 
+### 第 12 步：账号唯一校验
+
+目标：新增和编辑用户时，后端拦住重复账号，保证 `username` 不会重复。
+
+为什么要做这一步：
+
+- 账号通常是登录身份，不能让两个用户使用同一个账号。
+- 前端可以做提示，但真正可靠的限制必须放在后端。
+- 账号重复不是“字段为空”这种格式问题，而是需要查数据库后才能判断的业务规则。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/common/BusinessException.java
+backend/src/main/java/com/example/admin/common/GlobalExceptionHandler.java
+backend/src/main/java/com/example/admin/user/repository/UserRepository.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `BusinessException.java`：自定义业务异常，用来表达“请求格式正确，但业务规则不允许”。
+- `GlobalExceptionHandler.java`：捕获 `BusinessException`，继续返回统一的 `ApiResponse` 结构。
+- `UserRepository.java`：新增 `existsByUsername` 和 `existsByUsernameAndIdNot`，让 JPA 自动生成查询。
+- `UserService.java`：新增和编辑保存前检查账号是否重复，重复时抛出 `账号已存在`。
+- `App.vue`：账号输入框提示它是唯一账号；接口错误仍然通过 `userError` 展示。
+- `README.md`：记录第 12 步的学习目标、原因和文件职责。
+
+你需要理解：
+
+- 参数校验：比如不能为空、长度不能超过 30，通常写在 DTO 注解上。
+- 业务校验：比如账号不能重复，需要查数据库，通常写在 Service 里。
+- `existsByUsername`：Spring Data JPA 根据方法名自动生成 SQL，判断账号是否存在。
+- `existsByUsernameAndIdNot`：编辑时使用，表示“这个账号是否被其他用户使用”。
+- `BusinessException`：Service 发现业务不允许时抛出，Controller 不需要到处手写重复判断。
+
 ## 启动后端
 
 进入后端目录：
