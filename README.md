@@ -195,7 +195,7 @@ Password: 留空
 
 ### 第 8 步：用户查询筛选
 
-目标：让用户列表支持按关键字和状态筛选，学习后台系统里最常见的“查询参数”接口。
+目标：让用户列表支持按关键字和状态筛选，学习后台系统里常见的“查询参数”接口。
 
 接口：
 
@@ -206,12 +206,38 @@ GET /api/users?keyword=admin&status=enabled
 为什么要做这一步：
 
 - 后台系统的列表页通常都要支持查询，比如按账号、昵称、状态筛选。
-- 前端筛选条件一般不会放到请求体里，而是放到 URL 查询参数里。
-- 后端用 `@RequestParam` 接收查询参数，再传给 Service 和 Repository 查数据库。
+- 前端筛选条件一般不放到请求体里，而是放到 URL 查询参数里。
+- 后端用 `@RequestParam` 接收查询参数，再传给 Service 和 Repository 查询数据库。
 
-这一步修改了什么：
+你需要理解：
+
+- `@RequestParam`：从 URL 查询参数里取值，比如 `?keyword=admin`。
+- `required = false`：表示这个参数可以不传。
+- `URLSearchParams`：前端用来拼接查询参数，避免手写字符串出错。
+- `@Query`：在 Repository 里自定义查询语句。
+- `:keyword` 和 `:status`：查询语句里的命名参数，对应方法参数上的 `@Param`。
+- `LIKE '%关键字%'`：数据库里的模糊查询，用来匹配包含关键字的账号或昵称。
+
+### 第 9 步：用户列表分页查询
+
+目标：让用户列表支持分页，理解真实后台列表页为什么不会一次性返回全部数据。
+
+接口：
 
 ```text
+GET /api/users?keyword=admin&status=enabled&page=1&size=5
+```
+
+为什么要做这一步：
+
+- 如果用户有几万条，一次性返回全部数据会很慢，也会让前端页面卡顿。
+- 分页可以让后端每次只返回当前页数据，比如第 1 页 5 条。
+- 前端还需要知道总条数 `total`，这样才能显示“共多少条、当前第几页”。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/common/PageResult.java
 backend/src/main/java/com/example/admin/user/controller/UserController.java
 backend/src/main/java/com/example/admin/user/service/UserService.java
 backend/src/main/java/com/example/admin/user/repository/UserRepository.java
@@ -222,21 +248,25 @@ README.md
 
 每个文件的作用：
 
-- `UserController.java`：给 `GET /api/users` 增加 `keyword` 和 `status` 两个可选查询参数。
-- `UserService.java`：把查询条件传给 Repository，并把数据库 Entity 转成前端 VO。
-- `UserRepository.java`：新增 `searchUsers`，真正负责按账号、昵称、状态查数据库。
-- `App.vue`：新增筛选表单，把关键字和状态拼成 URL 查询参数。
-- `style.css`：给筛选表单补布局样式。
-- `README.md`：记录第 8 步的学习目标和文件职责。
+- `PageResult.java`：统一分页返回结构，里面有 `records`、`total`、`page`、`size`。
+- `UserController.java`：给 `GET /api/users` 增加 `page` 和 `size` 参数，并返回分页结果。
+- `UserService.java`：把前端页码转成 JPA 页码，调用 Repository 查询分页数据，再把 Entity 转成 VO。
+- `UserRepository.java`：把返回类型从普通列表改成 `Page<UserEntity>`，让 JPA 同时返回当前页数据和总条数。
+- `App.vue`：新增分页状态、每页数量选择、上一页、下一页，并解析后端返回的 `records/total/page/size`。
+- `style.css`：新增分页条样式，让总条数和分页按钮在表格下面显示。
+- `README.md`：记录第 9 步的学习目标、接口格式和每个文件的职责。
 
 你需要理解：
 
-- `@RequestParam`：从 URL 查询参数里取值，比如 `?keyword=admin`。
-- `required = false`：表示这个参数可以不传。
-- `URLSearchParams`：前端用来拼接查询参数，避免手写字符串出错。
-- `@Query`：在 Repository 里自定义查询语句。
-- `:keyword` 和 `:status`：查询语句里的命名参数，对应方法参数上的 `@Param`。
-- `LIKE '%关键字%'`：数据库里的模糊查询，用来匹配包含关键字的账号或昵称。
+- `PageResult<T>`：自己定义的分页返回对象，`T` 表示 records 里放什么类型的数据。
+- `records`：当前页的数据列表。
+- `total`：符合查询条件的总条数，不只是当前页条数。
+- `page`：当前页码，我们给前端使用，从 1 开始。
+- `size`：每页显示多少条。
+- `Pageable`：Spring Data JPA 的分页参数对象。
+- `PageRequest.of(page, size, sort)`：创建分页参数，告诉 JPA 查第几页、每页几条、按什么排序。
+- `Page<UserEntity>`：JPA 的分页查询结果，既有当前页数据，也有总条数。
+- 前端页码从 1 开始，但 JPA 页码从 0 开始，所以 Service 里要用 `safePage - 1`。
 
 ## 启动后端
 
@@ -263,7 +293,7 @@ http://localhost:8080
 
 ```text
 http://localhost:8080/api/system/hello
-http://localhost:8080/api/users
+http://localhost:8080/api/users?page=1&size=5
 ```
 
 ## 启动前端

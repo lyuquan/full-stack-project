@@ -1,6 +1,7 @@
 package com.example.admin.user.controller;
 
 import com.example.admin.common.ApiResponse;
+import com.example.admin.common.PageResult;
 import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.service.UserService;
@@ -16,49 +17,49 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
-import java.util.List;
 
 /**
- * User management API controller.
+ * 用户管理接口入口。
  *
- * Controller receives frontend requests and delegates business work to Service.
+ * Controller 负责接收前端请求、读取 URL 参数或请求体，然后调用 Service 处理业务。
  */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     /**
-     * User business service injected by Spring.
+     * 用户业务服务，由 Spring 自动注入。
      */
     private final UserService userService;
 
     /**
-     * Constructor injection makes required dependencies explicit.
+     * 构造方法注入：让这个 Controller 必须依赖 UserService 这件事更明确。
      */
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
     /**
-     * Query user list.
+     * 分页查询用户列表。
      *
-     * Request: GET /api/users
-     * Request with filters: GET /api/users?keyword=admin&status=enabled
+     * 示例：GET /api/users?keyword=admin&status=enabled&page=1&size=5
      */
     @GetMapping
-    public ApiResponse<List<UserVO>> listUsers(
+    public ApiResponse<PageResult<UserVO>> listUsers(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String status
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "5") Integer size
     ) {
-        List<UserVO> users = userService.listUsers(keyword, status);
+        PageResult<UserVO> result = userService.listUsers(keyword, status, page, size);
 
-        return ApiResponse.success(users);
+        return ApiResponse.success(result);
     }
 
     /**
-     * Create user.
+     * 新增用户。
      *
-     * Request: POST /api/users
+     * @RequestBody 表示从请求体 JSON 中读取字段，@Valid 表示触发 DTO 上的参数校验。
      */
     @PostMapping
     public ApiResponse<UserVO> createUser(@Valid @RequestBody CreateUserDTO createUserDTO) {
@@ -68,9 +69,9 @@ public class UserController {
     }
 
     /**
-     * Update user.
+     * 编辑用户。
      *
-     * Request: PUT /api/users/{id}
+     * @PathVariable 会读取 /api/users/{id} 里的 id，例如 /api/users/1 中的 1。
      */
     @PutMapping("/{id}")
     public ApiResponse<UserVO> updateUser(
@@ -87,9 +88,9 @@ public class UserController {
     }
 
     /**
-     * Delete user.
+     * 删除用户。
      *
-     * Request: DELETE /api/users/{id}
+     * 删除成功不需要返回具体业务数据，所以 data 返回 null。
      */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteUser(@PathVariable Long id) {

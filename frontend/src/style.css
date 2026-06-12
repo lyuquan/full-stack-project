@@ -111,7 +111,13 @@ h2 {
   background: #f8fafc;
 }
 
-/* 内容面板：展示接口请求结果和用户表格。 */
+.refresh-button:disabled,
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 内容面板：展示接口请求结果、表单和用户表格。 */
 .panel {
   max-width: 920px;
   padding: 24px;
@@ -157,10 +163,10 @@ h2 {
   font-weight: 700;
 }
 
-/* 筛选表单：把查询条件和按钮放在一行。 */
+/* 筛选表单：关键字、状态、每页数量和按钮放在一行。 */
 .search-form {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 160px auto auto;
+  grid-template-columns: minmax(180px, 1fr) 160px 120px auto auto;
   gap: 14px;
   align-items: end;
 }
@@ -187,7 +193,7 @@ h2 {
   background: #ffffff;
 }
 
-/* 用户表单：把账号、昵称、角色、状态和提交按钮放在一行。 */
+/* 用户表单：账号、昵称、角色、状态和提交按钮放在一行。 */
 .user-form {
   display: grid;
   grid-template-columns: repeat(4, minmax(120px, 1fr)) auto;
@@ -350,6 +356,23 @@ td {
   opacity: 0.6;
 }
 
+/* 分页条：展示总条数、当前页，并提供上一页/下一页操作。 */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* 手机屏幕下改成上下布局，避免左侧菜单挤压内容。 */
 @media (max-width: 720px) {
   .admin-shell {
@@ -370,11 +393,13 @@ td {
     flex-direction: column;
   }
 
-  .user-form {
+  .user-form,
+  .search-form {
     grid-template-columns: 1fr;
   }
 
-  .search-form {
-    grid-template-columns: 1fr;
+  .pagination-bar {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

@@ -1,10 +1,15 @@
 package com.example.admin.user.service;
 
+import com.example.admin.common.PageResult;
 import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.entity.UserEntity;
 import com.example.admin.user.repository.UserRepository;
 import com.example.admin.user.vo.UserVO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -32,20 +37,33 @@ public class UserService {
     }
 
     /**
-     * Query users from the database.
+     * Query users from the database with filters and pagination.
      *
-     * keyword is used to search username or nickname.
-     * status is used to filter enabled or disabled users.
+     * The frontend page starts from 1, but Spring Data JPA page index starts from 0.
      */
-    public List<UserVO> listUsers(String keyword, String status) {
-        List<UserEntity> entities = userRepository.searchUsers(keyword, status);
+    public PageResult<UserVO> listUsers(String keyword, String status, Integer page, Integer size) {
+        int safePage = page == null || page < 1 ? 1 : page;
+        int safeSize = size == null || size < 1 ? 5 : size;
+
+        Pageable pageable = PageRequest.of(
+                safePage - 1,
+                safeSize,
+                Sort.by(Sort.Direction.ASC, "id")
+        );
+
+        Page<UserEntity> entityPage = userRepository.searchUsers(keyword, status, pageable);
         List<UserVO> users = new ArrayList<UserVO>();
 
-        for (UserEntity entity : entities) {
+        for (UserEntity entity : entityPage.getContent()) {
             users.add(toVO(entity));
         }
 
-        return users;
+        return new PageResult<UserVO>(
+                users,
+                entityPage.getTotalElements(),
+                safePage,
+                safeSize
+        );
     }
 
     /**
@@ -101,7 +119,6 @@ public class UserService {
      * Convert database Entity to frontend VO.
      *
      * Entity belongs to the database layer. VO belongs to the API response layer.
-     * Keeping this conversion explicit helps beginners see the boundary clearly.
      */
     private UserVO toVO(UserEntity entity) {
         return new UserVO(

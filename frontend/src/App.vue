@@ -16,7 +16,7 @@ const userLoading = ref(false)
 // userError 保存用户列表、新增、编辑、删除接口的错误提示。
 const userError = ref('')
 
-// users 保存后端 /api/users 返回的用户数组。
+// users 保存当前页的用户数组，它来自后端返回的 data.records。
 const users = ref([])
 
 // saveLoading 控制新增或编辑用户时的提交按钮状态。
@@ -31,13 +31,20 @@ const deleteLoadingId = ref(null)
 // editingUserId 为 null 表示新增模式，有值表示正在编辑某个用户。
 const editingUserId = ref(null)
 
-// searchForm 保存用户列表筛选条件，会拼到 GET /api/users 的查询参数里。
+// searchForm 保存列表筛选条件，会拼到 GET /api/users 的查询参数里。
 const searchForm = reactive({
   keyword: '',
   status: ''
 })
 
-// userForm 是表单数据，会被提交给 POST /api/users 或 PUT /api/users/{id}。
+// pagination 保存分页状态：当前页、每页数量、符合条件的总条数。
+const pagination = reactive({
+  page: 1,
+  size: 5,
+  total: 0
+})
+
+// userForm 是表单数据，会提交给 POST /api/users 或 PUT /api/users/{id}。
 const userForm = reactive({
   username: '',
   nickname: '',
@@ -47,6 +54,9 @@ const userForm = reactive({
 
 // computed 会根据 editingUserId 自动计算当前是否处于编辑模式。
 const isEditing = computed(() => editingUserId.value !== null)
+
+// totalPages 根据总条数和每页数量计算总页数，最少显示 1 页。
+const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagination.size)))
 
 /**
  * 请求后端健康检查接口，用来确认前后端是否已经连通。
@@ -72,7 +82,7 @@ async function loadBackendInfo() {
 }
 
 /**
- * 根据筛选条件请求用户列表。
+ * 根据筛选条件和分页参数请求用户列表。
  *
  * URLSearchParams 用来安全拼接查询参数，避免手写字符串时漏掉 ?、& 或编码。
  */
@@ -90,15 +100,18 @@ async function loadUsers() {
     params.set('status', searchForm.status)
   }
 
-  const queryString = params.toString()
-  const url = queryString ? `/api/users?${queryString}` : '/api/users'
+  params.set('page', String(pagination.page))
+  params.set('size', String(pagination.size))
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(`/api/users?${params.toString()}`)
     const result = await response.json()
 
     if (result.code === 200) {
-      users.value = result.data
+      users.value = result.data.records
+      pagination.total = result.data.total
+      pagination.page = result.data.page
+      pagination.size = result.data.size
     } else {
       userError.value = result.message || '用户列表接口返回异常'
     }
@@ -107,6 +120,40 @@ async function loadUsers() {
   } finally {
     userLoading.value = false
   }
+}
+
+/**
+ * 提交筛选表单。
+ *
+ * 新筛选条件一般要从第 1 页开始看，所以这里先把 page 重置成 1。
+ */
+function submitSearch() {
+  pagination.page = 1
+  loadUsers()
+}
+
+/**
+ * 切换页码。
+ *
+ * 上一页、下一页都会走这个方法，先限制页码范围，再重新请求列表。
+ */
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value || userLoading.value) {
+    return
+  }
+
+  pagination.page = page
+  loadUsers()
+}
+
+/**
+ * 修改每页数量。
+ *
+ * 每页数量变了以后，原来的页码可能不存在，所以回到第 1 页重新查询。
+ */
+function changePageSize() {
+  pagination.page = 1
+  loadUsers()
 }
 
 /**
@@ -153,10 +200,10 @@ async function saveUser() {
 /**
  * 删除用户。
  *
- * 这里使用 DELETE /api/users/{id}，id 来自表格当前行。
+ * 删除当前页最后一条数据后，当前页可能变空，所以会自动回到上一页再查一次。
  */
 async function deleteUser(user) {
-  const confirmed = window.confirm(`确定删除用户「${user.nickname}」吗？`)
+  const confirmed = window.confirm(`确定删除用户“${user.nickname}”吗？`)
 
   if (!confirmed) {
     return
@@ -179,6 +226,11 @@ async function deleteUser(user) {
 
       saveMessage.value = `已删除用户：${user.nickname}`
       await loadUsers()
+
+      if (users.value.length === 0 && pagination.page > 1) {
+        pagination.page -= 1
+        await loadUsers()
+      }
     } else {
       userError.value = result.message || '删除用户失败'
     }
@@ -203,11 +255,12 @@ function startEdit(user) {
 }
 
 /**
- * 清空筛选条件，并重新请求完整用户列表。
+ * 清空筛选条件，并回到第 1 页重新请求用户列表。
  */
 function resetSearch() {
   searchForm.keyword = ''
   searchForm.status = ''
+  pagination.page = 1
   loadUsers()
 }
 
@@ -248,8 +301,8 @@ onMounted(() => {
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Step 8</p>
-          <h1>用户查询筛选</h1>
+          <p class="eyebrow">Step 9</p>
+          <h1>用户分页查询</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
           重新请求
@@ -277,12 +330,12 @@ onMounted(() => {
       <section class="panel search-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">GET /api/users?keyword=&status=</p>
+            <p class="eyebrow">GET /api/users?keyword=&status=&page=&size=</p>
             <h2>筛选用户</h2>
           </div>
         </div>
 
-        <form class="search-form" @submit.prevent="loadUsers">
+        <form class="search-form" @submit.prevent="submitSearch">
           <label>
             <span>关键字</span>
             <input v-model="searchForm.keyword" placeholder="账号或昵称" />
@@ -294,6 +347,15 @@ onMounted(() => {
               <option value="">全部状态</option>
               <option value="enabled">启用</option>
               <option value="disabled">禁用</option>
+            </select>
+          </label>
+
+          <label>
+            <span>每页数量</span>
+            <select v-model.number="pagination.size" @change="changePageSize">
+              <option :value="5">5 条</option>
+              <option :value="10">10 条</option>
+              <option :value="20">20 条</option>
             </select>
           </label>
 
@@ -380,51 +442,77 @@ onMounted(() => {
           {{ userError }}
         </p>
 
-        <div v-else class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>账号</th>
-                <th>昵称</th>
-                <th>角色</th>
-                <th>状态</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="user in users" :key="user.id">
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.nickname }}</td>
-                <td>{{ user.role }}</td>
-                <td>
-                  <span class="badge" :class="user.status">
-                    {{ user.status === 'enabled' ? '启用' : '禁用' }}
-                  </span>
-                </td>
-                <td>
-                  <div class="action-buttons">
-                    <button class="link-button" type="button" @click="startEdit(user)">
-                      编辑
-                    </button>
-                    <button
-                      class="danger-link-button"
-                      type="button"
-                      :disabled="deleteLoadingId === user.id"
-                      @click="deleteUser(user)"
-                    >
-                      {{ deleteLoadingId === user.id ? '删除中...' : '删除' }}
-                    </button>
-                  </div>
-                </td>
-              </tr>
+        <div v-else>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>账号</th>
+                  <th>昵称</th>
+                  <th>角色</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="user in users" :key="user.id">
+                  <td>{{ user.id }}</td>
+                  <td>{{ user.username }}</td>
+                  <td>{{ user.nickname }}</td>
+                  <td>{{ user.role }}</td>
+                  <td>
+                    <span class="badge" :class="user.status">
+                      {{ user.status === 'enabled' ? '启用' : '禁用' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="link-button" type="button" @click="startEdit(user)">
+                        编辑
+                      </button>
+                      <button
+                        class="danger-link-button"
+                        type="button"
+                        :disabled="deleteLoadingId === user.id"
+                        @click="deleteUser(user)"
+                      >
+                        {{ deleteLoadingId === user.id ? '删除中...' : '删除' }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
 
-              <tr v-if="users.length === 0">
-                <td class="empty-cell" colspan="6">没有匹配的用户</td>
-              </tr>
-            </tbody>
-          </table>
+                <tr v-if="users.length === 0">
+                  <td class="empty-cell" colspan="6">没有匹配的用户</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination-bar">
+            <span>
+              共 {{ pagination.total }} 条，第 {{ pagination.page }} / {{ totalPages }} 页
+            </span>
+            <div class="pagination-actions">
+              <button
+                class="secondary-button"
+                type="button"
+                :disabled="pagination.page <= 1 || userLoading"
+                @click="goToPage(pagination.page - 1)"
+              >
+                上一页
+              </button>
+              <button
+                class="secondary-button"
+                type="button"
+                :disabled="pagination.page >= totalPages || userLoading"
+                @click="goToPage(pagination.page + 1)"
+              >
+                下一页
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </section>
