@@ -44,16 +44,17 @@ public class UserController {
     /**
      * 分页查询用户列表。
      *
-     * 示例：GET /api/users?keyword=admin&status=enabled&page=1&size=5
+     * 示例：GET /api/users?keyword=admin&role=运营管理员&status=enabled&page=1&size=5
      */
     @GetMapping
     public ApiResponse<PageResult<UserVO>> listUsers(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String role,
             @RequestParam(required = false) String status,
             @RequestParam(required = false, defaultValue = "1") Integer page,
             @RequestParam(required = false, defaultValue = "5") Integer size
     ) {
-        PageResult<UserVO> result = userService.listUsers(keyword, status, page, size);
+        PageResult<UserVO> result = userService.listUsers(keyword, role, status, page, size);
 
         return ApiResponse.success(result);
     }

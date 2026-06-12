@@ -427,6 +427,50 @@ README.md
 - `createdAt`：创建后一般不再改变。
 - `updatedAt`：每次编辑、启用禁用等更新操作后都会变化。
 
+### 第 14 步：按角色筛选用户
+
+目标：让用户列表支持按角色筛选，理解一个新的查询条件如何从前端一路传到后端数据库查询。
+
+接口：
+
+```text
+GET /api/users?keyword=admin&role=运营管理员&status=enabled&page=1&size=5
+```
+
+为什么要做这一步：
+
+- 后台系统的列表页通常不只按一个条件查，而是多个条件组合查询。
+- `role` 是用户表里已经存在的字段，所以不需要改数据库结构，只需要把它作为查询条件传下去。
+- 新增查询条件时，前端、Controller、Service、Repository 必须保持参数名和含义一致。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+backend/src/main/java/com/example/admin/user/repository/UserRepository.java
+frontend/src/App.vue
+frontend/src/style.css
+README.md
+```
+
+每个文件的作用：
+
+- `UserController.java`：给 `GET /api/users` 增加 `role` 查询参数，接收前端 URL 里的 `role=运营管理员`。
+- `UserService.java`：把 `role` 参数继续传给 Repository，保持 Controller 不直接操作数据库。
+- `UserRepository.java`：在 JPQL 查询里增加 `and (:role is null or :role = '' or u.role = :role)`，表示角色为空时不过滤，有值时按角色精确匹配。
+- `App.vue`：筛选表单新增“角色”下拉框，并在请求用户列表时把 `role` 拼进 `URLSearchParams`。
+- `style.css`：筛选表单多了一个下拉框，所以调整网格列宽，避免按钮和输入框挤在一起。
+- `README.md`：记录第 14 步的学习目标、接口格式和每个文件职责。
+
+你需要理解：
+
+- `@RequestParam(required = false) String role`：从 URL 查询参数里接收 `role`，不传也可以。
+- `URLSearchParams`：前端拼查询参数的工具，会把中文角色名自动编码到 URL 里。
+- `@Param("role")`：把 Java 方法参数绑定到 JPQL 里的 `:role`。
+- `u.role = :role`：数据库查询条件，表示只查角色等于传入角色的用户。
+- `:role is null or :role = ''`：当角色参数为空时，不启用角色筛选。
+
 ## 启动后端
 
 进入后端目录：

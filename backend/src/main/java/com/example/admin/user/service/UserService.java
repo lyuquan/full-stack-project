@@ -42,7 +42,7 @@ public class UserService {
      *
      * The frontend page starts from 1, but Spring Data JPA page index starts from 0.
      */
-    public PageResult<UserVO> listUsers(String keyword, String status, Integer page, Integer size) {
+    public PageResult<UserVO> listUsers(String keyword, String role, String status, Integer page, Integer size) {
         int safePage = page == null || page < 1 ? 1 : page;
         int safeSize = size == null || size < 1 ? 5 : size;
 
@@ -52,7 +52,7 @@ public class UserService {
                 Sort.by(Sort.Direction.ASC, "id")
         );
 
-        Page<UserEntity> entityPage = userRepository.searchUsers(keyword, status, pageable);
+        Page<UserEntity> entityPage = userRepository.searchUsers(keyword, role, status, pageable);
         List<UserVO> users = new ArrayList<UserVO>();
 
         for (UserEntity entity : entityPage.getContent()) {

@@ -32,7 +32,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     boolean existsByUsernameAndIdNot(String username, Long id);
 
     /**
-     * Search users by optional keyword and optional status.
+     * Search users by optional keyword, role and status.
      *
      * Pageable tells JPA which page and how many records should be queried.
      */
@@ -40,9 +40,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
             "where (:keyword is null or :keyword = '' " +
             "or lower(u.username) like lower(concat('%', :keyword, '%')) " +
             "or lower(u.nickname) like lower(concat('%', :keyword, '%'))) " +
+            "and (:role is null or :role = '' or u.role = :role) " +
             "and (:status is null or :status = '' or u.status = :status)")
     Page<UserEntity> searchUsers(
             @Param("keyword") String keyword,
+            @Param("role") String role,
             @Param("status") String status,
             Pageable pageable
     );

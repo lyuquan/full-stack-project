@@ -46,6 +46,7 @@ const editingUserId = ref(null)
 // searchForm 保存列表筛选条件，会拼到 GET /api/users 的查询参数里。
 const searchForm = reactive({
   keyword: '',
+  role: '',
   status: ''
 })
 
@@ -106,6 +107,10 @@ async function loadUsers() {
 
   if (searchForm.keyword.trim()) {
     params.set('keyword', searchForm.keyword.trim())
+  }
+
+  if (searchForm.role) {
+    params.set('role', searchForm.role)
   }
 
   if (searchForm.status) {
@@ -376,6 +381,7 @@ function startEdit(user) {
  */
 function resetSearch() {
   searchForm.keyword = ''
+  searchForm.role = ''
   searchForm.status = ''
   pagination.page = 1
   loadUsers()
@@ -495,7 +501,7 @@ onMounted(() => {
       <section class="panel search-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">GET /api/users?keyword=&status=&page=&size=</p>
+            <p class="eyebrow">GET /api/users?keyword=&role=&status=&page=&size=</p>
             <h2>筛选用户</h2>
           </div>
         </div>
@@ -512,6 +518,16 @@ onMounted(() => {
               <option value="">全部状态</option>
               <option value="enabled">启用</option>
               <option value="disabled">禁用</option>
+            </select>
+          </label>
+
+          <label>
+            <span>角色</span>
+            <select v-model="searchForm.role">
+              <option value="">全部角色</option>
+              <option value="超级管理员">超级管理员</option>
+              <option value="运营管理员">运营管理员</option>
+              <option value="只读用户">只读用户</option>
             </select>
           </label>
 

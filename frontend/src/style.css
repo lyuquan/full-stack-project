@@ -164,10 +164,10 @@ h2 {
   font-weight: 700;
 }
 
-/* 筛选表单：关键字、状态、每页数量和按钮放在一行。 */
+/* 筛选表单：关键字、状态、角色、每页数量和按钮放在一行。 */
 .search-form {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 160px 120px auto auto;
+  grid-template-columns: minmax(180px, 1fr) 140px 150px 120px auto auto;
   gap: 14px;
   align-items: end;
 }
