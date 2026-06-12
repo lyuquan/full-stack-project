@@ -1,12 +1,12 @@
 package com.example.admin.user.vo;
 
 /**
- * Role option returned to the frontend select boxes.
+ * Common option returned to frontend select boxes.
  *
  * value is the real value submitted to the backend.
  * label is the text displayed on the page.
  */
-public class RoleOptionVO {
+public class OptionVO {
 
     /**
      * Actual role value used by DTO validation and database records.
@@ -18,10 +18,10 @@ public class RoleOptionVO {
      */
     private String label;
 
-    public RoleOptionVO() {
+    public OptionVO() {
     }
 
-    public RoleOptionVO(String value, String label) {
+    public OptionVO(String value, String label) {
         this.value = value;
         this.label = label;
     }

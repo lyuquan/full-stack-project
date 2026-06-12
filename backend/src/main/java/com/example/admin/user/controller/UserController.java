@@ -6,7 +6,7 @@ import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.dto.UpdateUserStatusDTO;
 import com.example.admin.user.service.UserService;
-import com.example.admin.user.vo.RoleOptionVO;
+import com.example.admin.user.vo.OptionVO;
 import com.example.admin.user.vo.UserStatsVO;
 import com.example.admin.user.vo.UserVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -82,10 +82,23 @@ public class UserController {
      * 示例：GET /api/users/roles
      */
     @GetMapping("/roles")
-    public ApiResponse<List<RoleOptionVO>> listRoleOptions() {
-        List<RoleOptionVO> roles = userService.listRoleOptions();
+    public ApiResponse<List<OptionVO>> listRoleOptions() {
+        List<OptionVO> roles = userService.listRoleOptions();
 
         return ApiResponse.success(roles);
+    }
+
+    /**
+     * 查询用户状态下拉选项。
+     *
+     * 这个接口给前端筛选表单、用户表单和状态展示逻辑使用。
+     * 示例：GET /api/users/statuses
+     */
+    @GetMapping("/statuses")
+    public ApiResponse<List<OptionVO>> listStatusOptions() {
+        List<OptionVO> statuses = userService.listStatusOptions();
+
+        return ApiResponse.success(statuses);
     }
 
     /**

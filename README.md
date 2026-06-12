@@ -617,7 +617,7 @@ GET /api/users/roles
 这一步新增或修改了什么：
 
 ```text
-backend/src/main/java/com/example/admin/user/vo/RoleOptionVO.java
+backend/src/main/java/com/example/admin/user/vo/OptionVO.java
 backend/src/main/java/com/example/admin/user/controller/UserController.java
 backend/src/main/java/com/example/admin/user/service/UserService.java
 frontend/src/App.vue
@@ -626,7 +626,7 @@ README.md
 
 每个文件的作用：
 
-- `RoleOptionVO.java`：定义角色选项返回结构，`value` 是提交给后端的真实值，`label` 是页面显示文字。
+- `OptionVO.java`：定义通用下拉选项返回结构，`value` 是提交给后端的真实值，`label` 是页面显示文字。
 - `UserController.java`：新增 `GET /api/users/roles` 接口，返回角色选项列表。
 - `UserService.java`：新增 `listRoleOptions`，先用固定列表返回三个角色。
 - `App.vue`：新增 `loadRoleOptions` 请求角色选项，并用 `v-for` 渲染筛选表单和用户表单的角色下拉框。
@@ -639,6 +639,67 @@ README.md
 - `label`：给用户看的显示文案。
 - `v-for="role in roleOptions"`：Vue 根据接口返回的数组循环渲染 `<option>`。
 - `/api/users/roles` 也要写在 `/api/users/{id}` 前面，避免 `roles` 被当成用户 ID。
+
+### 第 18 步：状态选项接口
+
+目标：新增状态下拉选项接口，让前端从后端获取 `enabled/disabled` 对应的显示文案。
+
+接口：
+
+```text
+GET /api/users/statuses
+```
+
+返回示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "value": "enabled",
+      "label": "启用"
+    },
+    {
+      "value": "disabled",
+      "label": "禁用"
+    }
+  ]
+}
+```
+
+为什么要做这一步：
+
+- 角色和状态本质上都是下拉选项，都可以使用统一的 `value/label` 结构。
+- 前端表单里不再写死 `enabled -> 启用`、`disabled -> 禁用` 的选项。
+- 后端仍然保存稳定的英文值，前端展示中文文案，这样数据库值和页面文案职责更清楚。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/user/vo/OptionVO.java
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `OptionVO.java`：由原来的角色选项 VO 泛化成通用选项 VO，角色和状态都能复用。
+- `UserController.java`：新增 `GET /api/users/statuses` 接口，返回状态选项列表。
+- `UserService.java`：新增 `listStatusOptions`，返回 `enabled/disabled` 两个状态。
+- `App.vue`：新增 `loadStatusOptions`，筛选表单和用户表单的状态下拉框都改成接口返回；状态展示通过 `getStatusLabel` 转成中文。
+- `README.md`：记录第 18 步的接口、原因和文件职责。
+
+你需要理解：
+
+- 通用 VO：如果两个接口返回结构一样，就可以共用一个 VO，减少重复类。
+- `enabled/disabled`：后端和数据库使用的稳定状态值。
+- `启用/禁用`：前端页面给用户看的显示文案。
+- `getStatusLabel(status)`：前端根据接口返回的选项，把状态值转换成显示文案。
+- `/api/users/statuses` 也要写在 `/api/users/{id}` 前面，避免 `statuses` 被当成用户 ID。
 
 ## 启动后端
 

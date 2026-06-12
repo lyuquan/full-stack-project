@@ -34,6 +34,12 @@ const roleOptions = ref([])
 // roleOptionsError 保存角色选项接口失败时的提示，避免下拉框无声失败。
 const roleOptionsError = ref('')
 
+// statusOptions 保存 GET /api/users/statuses 返回的状态下拉选项。
+const statusOptions = ref([])
+
+// statusOptionsError 保存状态选项接口失败时的提示。
+const statusOptionsError = ref('')
+
 // detailLoading 控制用户详情区域的加载状态。
 const detailLoading = ref(false)
 
@@ -204,6 +210,28 @@ async function loadRoleOptions() {
 }
 
 /**
+ * 请求状态下拉选项。
+ *
+ * 状态选项的 value 是 enabled/disabled，label 是页面显示的中文文案。
+ */
+async function loadStatusOptions() {
+  statusOptionsError.value = ''
+
+  try {
+    const response = await fetch('/api/users/statuses')
+    const result = await response.json()
+
+    if (result.code === 200) {
+      statusOptions.value = result.data
+    } else {
+      statusOptionsError.value = result.message || '状态选项接口返回异常'
+    }
+  } catch (error) {
+    statusOptionsError.value = '无法连接状态选项接口，请确认 Java 后端已经启动'
+  }
+}
+
+/**
  * 查询单个用户详情。
  *
  * 这里故意请求 GET /api/users/{id}，不是直接用表格里的 user，
@@ -284,6 +312,22 @@ function formatDateTime(value) {
   }
 
   return new Date(value).toLocaleString()
+}
+
+/**
+ * Convert a status value to display label.
+ *
+ * The table/detail only store enabled/disabled, so the label is read from
+ * statusOptions when available. The fallback keeps the page readable before the API returns.
+ */
+function getStatusLabel(status) {
+  const matchedStatus = statusOptions.value.find((option) => option.value === status)
+
+  if (matchedStatus) {
+    return matchedStatus.label
+  }
+
+  return status === 'enabled' ? '启用' : '禁用'
 }
 
 /**
@@ -473,7 +517,7 @@ function refreshUserData() {
  * 同时刷新系统状态和用户列表。
  */
 function refreshPageData() {
-  Promise.all([loadBackendInfo(), loadRoleOptions(), refreshUserData()])
+  Promise.all([loadBackendInfo(), loadRoleOptions(), loadStatusOptions(), refreshUserData()])
 }
 
 onMounted(() => {
@@ -601,7 +645,7 @@ onMounted(() => {
             <dt>状态</dt>
             <dd>
               <span class="badge" :class="selectedUser.status">
-                {{ selectedUser.status === 'enabled' ? '启用' : '禁用' }}
+                {{ getStatusLabel(selectedUser.status) }}
               </span>
             </dd>
             <dt>创建时间</dt>
@@ -632,8 +676,13 @@ onMounted(() => {
             <span>状态</span>
             <select v-model="searchForm.status">
               <option value="">全部状态</option>
-              <option value="enabled">启用</option>
-              <option value="disabled">禁用</option>
+              <option
+                v-for="status in statusOptions"
+                :key="status.value"
+                :value="status.value"
+              >
+                {{ status.label }}
+              </option>
             </select>
           </label>
 
@@ -715,8 +764,13 @@ onMounted(() => {
           <label>
             <span>状态</span>
             <select v-model="userForm.status">
-              <option value="enabled">启用</option>
-              <option value="disabled">禁用</option>
+              <option
+                v-for="status in statusOptions"
+                :key="status.value"
+                :value="status.value"
+              >
+                {{ status.label }}
+              </option>
             </select>
           </label>
 
@@ -731,6 +785,10 @@ onMounted(() => {
 
         <p v-if="roleOptionsError" class="status error form-message">
           {{ roleOptionsError }}
+        </p>
+
+        <p v-if="statusOptionsError" class="status error form-message">
+          {{ statusOptionsError }}
         </p>
       </section>
 
@@ -773,7 +831,7 @@ onMounted(() => {
                   <td>{{ user.role }}</td>
                   <td>
                     <span class="badge" :class="user.status">
-                      {{ user.status === 'enabled' ? '启用' : '禁用' }}
+                      {{ getStatusLabel(user.status) }}
                     </span>
                   </td>
                   <td>{{ formatDateTime(user.updatedAt) }}</td>
