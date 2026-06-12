@@ -791,6 +791,66 @@ GET /api/users/roles
 GET /api/users/statuses
 ```
 
+### 第 21 步：前端 API 请求封装
+
+目标：把 `App.vue` 里重复的 `fetch -> response.json() -> 判断 code -> 取 data` 逻辑抽到单独的 `api.js` 里。
+
+为什么要做这一步：
+
+- 之前每个接口都要手写 `fetch`、`response.json()`、`result.code === 200`，代码重复很多。
+- 后端返回结构已经统一成 `{ code, message, data }`，前端也应该统一处理这个结构。
+- 以后新增页面或新增接口时，只需要调用 `apiGet`、`apiPost` 这类方法，不用每次重新写一遍错误处理。
+
+这一步新增或修改了什么：
+
+```text
+frontend/src/api.js
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `api.js`：前端统一请求工具，专门负责发送请求、解析后端统一返回结构、遇到业务错误时抛出错误。
+- `App.vue`：不再直接到处写 `fetch`，改成调用 `apiGet`、`apiPost`、`apiPut`、`apiPatch`、`apiDelete`。
+- `README.md`：记录第 21 步的学习目标、文件职责和每个请求方法的含义。
+
+你需要理解：
+
+- `apiRequest(url, options)`：最底层的请求方法，所有 GET、POST、PUT、PATCH、DELETE 最后都会走到这里。
+- `fetch(url, options)`：浏览器自带的请求接口，用来真正发送 HTTP 请求。
+- `response.json()`：把后端返回的 JSON 字符串解析成 JavaScript 对象。
+- `result.code !== 200`：说明后端返回了业务错误，比如账号重复、参数校验失败、用户不存在。
+- `throw new ApiError(...)`：主动抛出一个错误，让页面里的 `catch` 统一接住并展示错误信息。
+- `return result.data`：页面真正关心的是 `data`，所以封装后调用接口可以直接拿到数据。
+- `apiGet(url)`：查询数据时使用，比如列表、详情、统计、下拉选项。
+- `apiPost(url, body)`：新增数据时使用，比如新增用户。
+- `apiPut(url, body)`：整体修改数据时使用，比如编辑用户。
+- `apiPatch(url, body)`：局部修改数据时使用，比如只修改用户状态。
+- `apiDelete(url)`：删除数据时使用，比如删除用户。
+- `getApiErrorMessage(error, networkMessage)`：页面里的错误转换函数，业务错误显示后端 message，网络错误显示“后端未启动”这类提示。
+
+改造前：
+
+```javascript
+const response = await fetch('/api/users/stats')
+const result = await response.json()
+
+if (result.code === 200) {
+  userStats.value = result.data
+} else {
+  statsError.value = result.message || '用户统计接口返回异常'
+}
+```
+
+改造后：
+
+```javascript
+userStats.value = await apiGet('/api/users/stats')
+```
+
+这一步没有新增后端接口，只是把前端请求代码整理得更像真实项目。
+
 ## 启动后端
 
 进入后端目录：

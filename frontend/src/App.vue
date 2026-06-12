@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './api'
 
 // systemLoading 控制“后端连接状态”区域的加载状态。
 const systemLoading = ref(false)
@@ -100,16 +101,9 @@ async function loadBackendInfo() {
   systemError.value = ''
 
   try {
-    const response = await fetch('/api/system/hello')
-    const result = await response.json()
-
-    if (result.code === 200) {
-      backendInfo.value = result.data
-    } else {
-      systemError.value = result.message || '系统接口返回异常'
-    }
+    backendInfo.value = await apiGet('/api/system/hello')
   } catch (error) {
-    systemError.value = '无法连接系统接口，请确认 Java 后端已经启动'
+    systemError.value = getApiErrorMessage(error, '无法连接系统接口，请确认 Java 后端已经启动')
   } finally {
     systemLoading.value = false
   }
@@ -142,19 +136,14 @@ async function loadUsers() {
   params.set('size', String(pagination.size))
 
   try {
-    const response = await fetch(`/api/users?${params.toString()}`)
-    const result = await response.json()
+    const data = await apiGet(`/api/users?${params.toString()}`)
 
-    if (result.code === 200) {
-      users.value = result.data.records
-      pagination.total = result.data.total
-      pagination.page = result.data.page
-      pagination.size = result.data.size
-    } else {
-      userError.value = result.message || '用户列表接口返回异常'
-    }
+    users.value = data.records
+    pagination.total = data.total
+    pagination.page = data.page
+    pagination.size = data.size
   } catch (error) {
-    userError.value = '无法连接用户列表接口，请确认 Java 后端已经启动'
+    userError.value = getApiErrorMessage(error, '无法连接用户列表接口，请确认 Java 后端已经启动')
   } finally {
     userLoading.value = false
   }
@@ -171,16 +160,9 @@ async function loadUserStats() {
   statsError.value = ''
 
   try {
-    const response = await fetch('/api/users/stats')
-    const result = await response.json()
-
-    if (result.code === 200) {
-      userStats.value = result.data
-    } else {
-      statsError.value = result.message || '用户统计接口返回异常'
-    }
+    userStats.value = await apiGet('/api/users/stats')
   } catch (error) {
-    statsError.value = '无法连接用户统计接口，请确认 Java 后端已经启动'
+    statsError.value = getApiErrorMessage(error, '无法连接用户统计接口，请确认 Java 后端已经启动')
   } finally {
     statsLoading.value = false
   }
@@ -196,16 +178,9 @@ async function loadRoleOptions() {
   roleOptionsError.value = ''
 
   try {
-    const response = await fetch('/api/users/roles')
-    const result = await response.json()
-
-    if (result.code === 200) {
-      roleOptions.value = result.data
-    } else {
-      roleOptionsError.value = result.message || '角色选项接口返回异常'
-    }
+    roleOptions.value = await apiGet('/api/users/roles')
   } catch (error) {
-    roleOptionsError.value = '无法连接角色选项接口，请确认 Java 后端已经启动'
+    roleOptionsError.value = getApiErrorMessage(error, '无法连接角色选项接口，请确认 Java 后端已经启动')
   }
 }
 
@@ -218,16 +193,9 @@ async function loadStatusOptions() {
   statusOptionsError.value = ''
 
   try {
-    const response = await fetch('/api/users/statuses')
-    const result = await response.json()
-
-    if (result.code === 200) {
-      statusOptions.value = result.data
-    } else {
-      statusOptionsError.value = result.message || '状态选项接口返回异常'
-    }
+    statusOptions.value = await apiGet('/api/users/statuses')
   } catch (error) {
-    statusOptionsError.value = '无法连接状态选项接口，请确认 Java 后端已经启动'
+    statusOptionsError.value = getApiErrorMessage(error, '无法连接状态选项接口，请确认 Java 后端已经启动')
   }
 }
 
@@ -243,16 +211,9 @@ async function loadUserDetail(id) {
   selectedUser.value = null
 
   try {
-    const response = await fetch(`/api/users/${id}`)
-    const result = await response.json()
-
-    if (result.code === 200) {
-      selectedUser.value = result.data
-    } else {
-      detailError.value = result.message || '用户详情接口返回异常'
-    }
+    selectedUser.value = await apiGet(`/api/users/${id}`)
   } catch (error) {
-    detailError.value = '无法连接用户详情接口，请确认 Java 后端已经启动'
+    detailError.value = getApiErrorMessage(error, '无法连接用户详情接口，请确认 Java 后端已经启动')
   } finally {
     detailLoading.value = false
   }
@@ -331,6 +292,19 @@ function getStatusLabel(status) {
 }
 
 /**
+ * 把请求错误转换成页面上展示的文字。
+ *
+ * ApiError 表示后端正常返回了业务错误，比如校验失败；其它错误通常是网络、代理或后端未启动。
+ */
+function getApiErrorMessage(error, networkMessage) {
+  if (error && error.name === 'ApiError') {
+    return error.message
+  }
+
+  return networkMessage
+}
+
+/**
  * 提交用户表单。
  *
  * 新增模式：POST /api/users
@@ -342,34 +316,24 @@ async function saveUser() {
   userError.value = ''
 
   const url = isEditing.value ? `/api/users/${editingUserId.value}` : '/api/users'
-  const method = isEditing.value ? 'PUT' : 'POST'
 
   try {
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(userForm)
-    })
-    const result = await response.json()
+    const savedUser = isEditing.value
+      ? await apiPut(url, userForm)
+      : await apiPost(url, userForm)
 
-    if (result.code === 200) {
-      saveMessage.value = isEditing.value
-        ? `已更新用户：${result.data.nickname}`
-        : `已新增用户：${result.data.nickname}`
+    saveMessage.value = isEditing.value
+      ? `已更新用户：${savedUser.nickname}`
+      : `已新增用户：${savedUser.nickname}`
 
-      if (selectedUser.value && selectedUser.value.id === result.data.id) {
-        selectedUser.value = result.data
-      }
-
-      resetForm()
-      await refreshUserData()
-    } else {
-      userError.value = result.message || '保存用户失败'
+    if (selectedUser.value && selectedUser.value.id === savedUser.id) {
+      selectedUser.value = savedUser
     }
+
+    resetForm()
+    await refreshUserData()
   } catch (error) {
-    userError.value = '保存用户请求失败，请确认 Java 后端已经启动'
+    userError.value = getApiErrorMessage(error, '保存用户请求失败，请确认 Java 后端已经启动')
   } finally {
     saveLoading.value = false
   }
@@ -392,32 +356,25 @@ async function deleteUser(user) {
   userError.value = ''
 
   try {
-    const response = await fetch(`/api/users/${user.id}`, {
-      method: 'DELETE'
-    })
-    const result = await response.json()
+    await apiDelete(`/api/users/${user.id}`)
 
-    if (result.code === 200) {
-      if (editingUserId.value === user.id) {
-        resetForm()
-      }
+    if (editingUserId.value === user.id) {
+      resetForm()
+    }
 
-      if (selectedUser.value && selectedUser.value.id === user.id) {
-        clearUserDetail()
-      }
+    if (selectedUser.value && selectedUser.value.id === user.id) {
+      clearUserDetail()
+    }
 
-      saveMessage.value = `已删除用户：${user.nickname}`
+    saveMessage.value = `已删除用户：${user.nickname}`
+    await refreshUserData()
+
+    if (users.value.length === 0 && pagination.page > 1) {
+      pagination.page -= 1
       await refreshUserData()
-
-      if (users.value.length === 0 && pagination.page > 1) {
-        pagination.page -= 1
-        await refreshUserData()
-      }
-    } else {
-      userError.value = result.message || '删除用户失败'
     }
   } catch (error) {
-    userError.value = '删除用户请求失败，请确认 Java 后端已经启动'
+    userError.value = getApiErrorMessage(error, '删除用户请求失败，请确认 Java 后端已经启动')
   } finally {
     deleteLoadingId.value = null
   }
@@ -442,30 +399,19 @@ async function changeUserStatus(user) {
   userError.value = ''
 
   try {
-    const response = await fetch(`/api/users/${user.id}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        status: nextStatus
-      })
+    const updatedUser = await apiPatch(`/api/users/${user.id}/status`, {
+      status: nextStatus
     })
-    const result = await response.json()
 
-    if (result.code === 200) {
-      saveMessage.value = `已${actionText}用户：${result.data.nickname}`
+    saveMessage.value = `已${actionText}用户：${updatedUser.nickname}`
 
-      if (selectedUser.value && selectedUser.value.id === result.data.id) {
-        selectedUser.value = result.data
-      }
-
-      await refreshUserData()
-    } else {
-      userError.value = result.message || `${actionText}用户失败`
+    if (selectedUser.value && selectedUser.value.id === updatedUser.id) {
+      selectedUser.value = updatedUser
     }
+
+    await refreshUserData()
   } catch (error) {
-    userError.value = `${actionText}用户请求失败，请确认 Java 后端已经启动`
+    userError.value = getApiErrorMessage(error, `${actionText}用户请求失败，请确认 Java 后端已经启动`)
   } finally {
     statusLoadingId.value = null
   }
