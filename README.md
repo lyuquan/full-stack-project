@@ -741,6 +741,56 @@ README.md
 - 注解里的 `regexp` 必须是编译期常量，所以 `UserConstants.ROLE_PATTERN` 可以用在 `@Pattern` 里。
 - 常量集中管理不是新功能，而是为了降低后续维护成本。
 
+### 第 20 步：后端接口测试
+
+目标：给用户模块补充自动化接口测试，学习不用打开浏览器也能验证后端接口是否正常。
+
+为什么要做这一步：
+
+- 后台系统接口越来越多，只靠手动点页面测试很容易漏掉问题。
+- 自动化测试可以在改代码后快速检查核心接口有没有被改坏。
+- 这一步先测试已经做过的统计接口、角色选项接口、状态选项接口，让你理解后端测试的基本写法。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/test/java/com/example/admin/user/controller/UserControllerTest.java
+README.md
+```
+
+每个文件的作用：
+
+- `UserControllerTest.java`：用户 Controller 的接口测试类，用代码模拟请求后端接口，并检查返回的 JSON 是否符合预期。
+- `README.md`：记录第 20 步的学习目标、测试命令和每段测试代码的含义。
+
+你需要理解：
+
+- `src/test/java`：专门放测试代码的目录，测试代码不会打包进正式后端程序。
+- `@SpringBootTest`：启动 Spring 的测试环境，让 Controller、Service、Repository 这些 Bean 都能被加载。
+- `@AutoConfigureMockMvc`：自动配置 `MockMvc`，让测试代码可以模拟 HTTP 请求。
+- `@TestPropertySource`：给测试单独指定配置，这里使用 H2 内存数据库，避免测试影响 `backend/data/admin.mv.db` 里的开发数据。
+- `MockMvc`：Spring 提供的接口测试工具，可以在不启动真实浏览器的情况下请求 Controller。
+- `mockMvc.perform(get("/api/users/stats"))`：模拟发送一次 `GET /api/users/stats` 请求。
+- `.andExpect(status().isOk())`：断言 HTTP 状态码必须是 200。
+- `jsonPath("$.code", is(200))`：断言返回 JSON 里的 `code` 字段必须等于 200。
+- `jsonPath("$.data.totalCount", is(3))`：断言返回 JSON 里的 `data.totalCount` 必须等于 3。
+- `hasSize(3)`：断言返回数组长度必须是 3，比如角色选项有 3 个。
+
+运行测试命令：
+
+```powershell
+cd d:\full-stack-project\backend
+..\.tools\apache-maven-3.9.6\bin\mvn.cmd test -s .mvn\settings.xml
+```
+
+这一步测试的接口：
+
+```text
+GET /api/users/stats
+GET /api/users/roles
+GET /api/users/statuses
+```
+
 ## 启动后端
 
 进入后端目录：
