@@ -3,6 +3,7 @@ package com.example.admin.user.config;
 import com.example.admin.user.entity.UserEntity;
 import com.example.admin.user.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -14,6 +15,7 @@ import java.util.Arrays;
  * first three users only once, so later edits and deletes can stay in the H2 file database.
  */
 @Component
+@Order(2)
 public class UserDataInitializer implements CommandLineRunner {
 
     /**
