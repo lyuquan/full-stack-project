@@ -234,18 +234,6 @@ GET /api/users?keyword=admin&status=enabled&page=1&size=5
 - 分页可以让后端每次只返回当前页数据，比如第 1 页 5 条。
 - 前端还需要知道总条数 `total`，这样才能显示“共多少条、当前第几页”。
 
-这一步新增或修改了什么：
-
-```text
-backend/src/main/java/com/example/admin/common/PageResult.java
-backend/src/main/java/com/example/admin/user/controller/UserController.java
-backend/src/main/java/com/example/admin/user/service/UserService.java
-backend/src/main/java/com/example/admin/user/repository/UserRepository.java
-frontend/src/App.vue
-frontend/src/style.css
-README.md
-```
-
 每个文件的作用：
 
 - `PageResult.java`：统一分页返回结构，里面有 `records`、`total`、`page`、`size`。
@@ -267,6 +255,100 @@ README.md
 - `PageRequest.of(page, size, sort)`：创建分页参数，告诉 JPA 查第几页、每页几条、按什么排序。
 - `Page<UserEntity>`：JPA 的分页查询结果，既有当前页数据，也有总条数。
 - 前端页码从 1 开始，但 JPA 页码从 0 开始，所以 Service 里要用 `safePage - 1`。
+
+### 第 10 步：用户详情接口
+
+目标：点击用户列表里的“查看”，请求后端详情接口，只查询一个用户。
+
+接口：
+
+```text
+GET /api/users/{id}
+```
+
+请求示例：
+
+```text
+GET /api/users/1
+```
+
+为什么要做这一步：
+
+- 列表接口通常只负责展示一批数据，详情接口负责展示某一条数据。
+- 真实项目里，列表页字段可能比较少，详情页字段可能更多，所以两类接口会分开设计。
+- 详情接口继续练习 `@PathVariable`，也能理解“通过 ID 查询单条记录”的后端流程。
+
+每个文件的作用：
+
+- `UserController.java`：新增 `GET /api/users/{id}`，接收 URL 里的用户 ID，查不到时返回 404。
+- `UserService.java`：新增 `getUserById`，通过 Repository 的 `findById` 查询单个用户。
+- `App.vue`：新增“查看”按钮、详情加载状态、详情错误提示、详情展示区域。
+- `style.css`：新增详情区域样式，让详情用键值对展示。
+- `README.md`：记录第 10 步的接口、原因和文件职责。
+
+你需要理解：
+
+- `/api/users`：用户列表接口，查询一批用户。
+- `/api/users/{id}`：用户详情接口，只查询一个用户。
+- `@GetMapping("/{id}")`：匹配 `/api/users/1` 这种路径。
+- `@PathVariable Long id`：把路径里的 `1` 转成 Java 的 `Long id`。
+- `findById(id)`：JPA 自带方法，用主键 ID 查一条数据。
+- `Optional<UserEntity>`：表示“可能有值，也可能没值”，避免直接拿空对象导致报错。
+- 查不到用户时返回 `ApiResponse.error(404, "用户不存在")`。
+
+### 第 11 步：启用和禁用用户
+
+目标：在用户列表里直接点击“启用”或“禁用”，只修改用户状态字段。
+
+接口：
+
+```text
+PATCH /api/users/{id}/status
+```
+
+请求示例：
+
+```text
+PATCH /api/users/1/status
+Content-Type: application/json
+
+{
+  "status": "disabled"
+}
+```
+
+为什么要做这一步：
+
+- 后台系统经常有启用、禁用、上架、下架这类“只改一个字段”的操作。
+- 如果只改状态，不应该要求前端提交完整用户表单，否则容易误改账号、昵称、角色。
+- `PATCH` 表示局部更新，比 `PUT` 更适合只修改 `status` 这种场景。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/user/dto/UpdateUserStatusDTO.java
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+frontend/src/App.vue
+frontend/src/style.css
+README.md
+```
+
+每个文件的作用：
+
+- `UpdateUserStatusDTO.java`：只接收 `status` 字段，并校验只能是 `enabled` 或 `disabled`。
+- `UserController.java`：新增 `PATCH /api/users/{id}/status`，专门处理启用和禁用。
+- `UserService.java`：新增 `updateUserStatus`，只修改数据库里的 `status` 字段。
+- `App.vue`：新增“启用/禁用”按钮，调用 PATCH 接口，成功后刷新列表和详情。
+- `style.css`：给禁用状态下的普通操作按钮补充样式。
+- `README.md`：记录第 11 步的接口、原因和文件职责。
+
+你需要理解：
+
+- `PUT`：通常表示整体更新，比如编辑完整用户信息。
+- `PATCH`：通常表示局部更新，比如只改一个状态字段。
+- 单独建 `UpdateUserStatusDTO` 是为了让接口参数更清楚，也避免前端传多余字段。
+- 后端仍然要校验 `status`，不能只相信前端按钮传来的值。
 
 ## 启动后端
 
@@ -294,6 +376,7 @@ http://localhost:8080
 ```text
 http://localhost:8080/api/system/hello
 http://localhost:8080/api/users?page=1&size=5
+http://localhost:8080/api/users/1
 ```
 
 ## 启动前端

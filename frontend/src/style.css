@@ -127,6 +127,7 @@ h2 {
 }
 
 .status-panel,
+.detail-panel,
 .search-panel,
 .form-panel {
   margin-bottom: 20px;
@@ -262,6 +263,12 @@ dd {
   font-weight: 700;
 }
 
+/* 详情区域：用键值对展示单个用户，和表格列表区分开。 */
+.detail-grid dl {
+  grid-template-columns: 80px minmax(0, 1fr);
+  margin-top: 0;
+}
+
 /* 表格外层支持横向滚动，保证手机上不会挤坏布局。 */
 .table-wrap {
   overflow-x: auto;
@@ -336,6 +343,11 @@ td {
 
 .link-button:hover {
   color: #1d4ed8;
+}
+
+.link-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .danger-link-button {

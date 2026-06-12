@@ -19,6 +19,15 @@ const userError = ref('')
 // users 保存当前页的用户数组，它来自后端返回的 data.records。
 const users = ref([])
 
+// detailLoading 控制用户详情区域的加载状态。
+const detailLoading = ref(false)
+
+// detailError 保存 GET /api/users/{id} 查询详情失败时的错误提示。
+const detailError = ref('')
+
+// selectedUser 保存当前正在查看详情的用户。
+const selectedUser = ref(null)
+
 // saveLoading 控制新增或编辑用户时的提交按钮状态。
 const saveLoading = ref(false)
 
@@ -27,6 +36,9 @@ const saveMessage = ref('')
 
 // deleteLoadingId 保存正在删除的用户 ID，用来禁用当前行的删除按钮。
 const deleteLoadingId = ref(null)
+
+// statusLoadingId 保存正在启用或禁用的用户 ID，用来禁用当前行的状态按钮。
+const statusLoadingId = ref(null)
 
 // editingUserId 为 null 表示新增模式，有值表示正在编辑某个用户。
 const editingUserId = ref(null)
@@ -123,6 +135,41 @@ async function loadUsers() {
 }
 
 /**
+ * 查询单个用户详情。
+ *
+ * 这里故意请求 GET /api/users/{id}，不是直接用表格里的 user，
+ * 是为了学习真实后台里“列表数据”和“详情数据”分开查询的写法。
+ */
+async function loadUserDetail(id) {
+  detailLoading.value = true
+  detailError.value = ''
+  selectedUser.value = null
+
+  try {
+    const response = await fetch(`/api/users/${id}`)
+    const result = await response.json()
+
+    if (result.code === 200) {
+      selectedUser.value = result.data
+    } else {
+      detailError.value = result.message || '用户详情接口返回异常'
+    }
+  } catch (error) {
+    detailError.value = '无法连接用户详情接口，请确认 Java 后端已经启动'
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+/**
+ * 关闭详情面板。
+ */
+function clearUserDetail() {
+  selectedUser.value = null
+  detailError.value = ''
+}
+
+/**
  * 提交筛选表单。
  *
  * 新筛选条件一般要从第 1 页开始看，所以这里先把 page 重置成 1。
@@ -185,6 +232,10 @@ async function saveUser() {
         ? `已更新用户：${result.data.nickname}`
         : `已新增用户：${result.data.nickname}`
 
+      if (selectedUser.value && selectedUser.value.id === result.data.id) {
+        selectedUser.value = result.data
+      }
+
       resetForm()
       await loadUsers()
     } else {
@@ -224,6 +275,10 @@ async function deleteUser(user) {
         resetForm()
       }
 
+      if (selectedUser.value && selectedUser.value.id === user.id) {
+        clearUserDetail()
+      }
+
       saveMessage.value = `已删除用户：${user.nickname}`
       await loadUsers()
 
@@ -238,6 +293,54 @@ async function deleteUser(user) {
     userError.value = '删除用户请求失败，请确认 Java 后端已经启动'
   } finally {
     deleteLoadingId.value = null
+  }
+}
+
+/**
+ * 启用或禁用用户。
+ *
+ * 这里使用 PATCH /api/users/{id}/status，因为只修改 status 一个字段。
+ */
+async function changeUserStatus(user) {
+  const nextStatus = user.status === 'enabled' ? 'disabled' : 'enabled'
+  const actionText = nextStatus === 'enabled' ? '启用' : '禁用'
+  const confirmed = window.confirm(`确定${actionText}用户“${user.nickname}”吗？`)
+
+  if (!confirmed) {
+    return
+  }
+
+  statusLoadingId.value = user.id
+  saveMessage.value = ''
+  userError.value = ''
+
+  try {
+    const response = await fetch(`/api/users/${user.id}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: nextStatus
+      })
+    })
+    const result = await response.json()
+
+    if (result.code === 200) {
+      saveMessage.value = `已${actionText}用户：${result.data.nickname}`
+
+      if (selectedUser.value && selectedUser.value.id === result.data.id) {
+        selectedUser.value = result.data
+      }
+
+      await loadUsers()
+    } else {
+      userError.value = result.message || `${actionText}用户失败`
+    }
+  } catch (error) {
+    userError.value = `${actionText}用户请求失败，请确认 Java 后端已经启动`
+  } finally {
+    statusLoadingId.value = null
   }
 }
 
@@ -301,8 +404,8 @@ onMounted(() => {
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Step 9</p>
-          <h1>用户分页查询</h1>
+          <p class="eyebrow">Step 10</p>
+          <h1>用户详情查询</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
           重新请求
@@ -325,6 +428,50 @@ onMounted(() => {
             <dd>{{ backendInfo.module }}</dd>
           </dl>
         </div>
+      </section>
+
+      <section class="panel detail-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">GET /api/users/{id}</p>
+            <h2>用户详情</h2>
+          </div>
+          <button
+            v-if="selectedUser || detailError"
+            class="secondary-button"
+            type="button"
+            @click="clearUserDetail"
+          >
+            关闭详情
+          </button>
+        </div>
+
+        <p v-if="detailLoading" class="status muted">正在请求用户详情...</p>
+
+        <p v-else-if="detailError" class="status error">
+          {{ detailError }}
+        </p>
+
+        <div v-else-if="selectedUser" class="detail-grid">
+          <dl>
+            <dt>ID</dt>
+            <dd>{{ selectedUser.id }}</dd>
+            <dt>账号</dt>
+            <dd>{{ selectedUser.username }}</dd>
+            <dt>昵称</dt>
+            <dd>{{ selectedUser.nickname }}</dd>
+            <dt>角色</dt>
+            <dd>{{ selectedUser.role }}</dd>
+            <dt>状态</dt>
+            <dd>
+              <span class="badge" :class="selectedUser.status">
+                {{ selectedUser.status === 'enabled' ? '启用' : '禁用' }}
+              </span>
+            </dd>
+          </dl>
+        </div>
+
+        <p v-else class="status muted">点击表格里的“查看”，这里会显示单个用户详情。</p>
       </section>
 
       <section class="panel search-panel">
@@ -428,7 +575,7 @@ onMounted(() => {
       <section class="panel table-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">GET / POST / PUT / DELETE</p>
+            <p class="eyebrow">GET / POST / PUT / PATCH / DELETE</p>
             <h2>用户管理</h2>
           </div>
           <button class="secondary-button" type="button" @click="loadUsers">
@@ -468,8 +615,25 @@ onMounted(() => {
                   </td>
                   <td>
                     <div class="action-buttons">
+                      <button class="link-button" type="button" @click="loadUserDetail(user.id)">
+                        查看
+                      </button>
                       <button class="link-button" type="button" @click="startEdit(user)">
                         编辑
+                      </button>
+                      <button
+                        class="link-button"
+                        type="button"
+                        :disabled="statusLoadingId === user.id"
+                        @click="changeUserStatus(user)"
+                      >
+                        {{
+                          statusLoadingId === user.id
+                            ? '处理中...'
+                            : user.status === 'enabled'
+                              ? '禁用'
+                              : '启用'
+                        }}
                       </button>
                       <button
                         class="danger-link-button"

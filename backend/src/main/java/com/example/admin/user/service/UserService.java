@@ -67,6 +67,21 @@ public class UserService {
     }
 
     /**
+     * Query one user by ID.
+     *
+     * findById returns Optional because the user may not exist in the database.
+     */
+    public UserVO getUserById(Long id) {
+        Optional<UserEntity> optionalUser = userRepository.findById(id);
+
+        if (!optionalUser.isPresent()) {
+            return null;
+        }
+
+        return toVO(optionalUser.get());
+    }
+
+    /**
      * Create a new user and save it to the database.
      */
     public UserVO createUser(CreateUserDTO createUserDTO) {
@@ -96,6 +111,27 @@ public class UserService {
         entity.setNickname(updateUserDTO.getNickname());
         entity.setRole(updateUserDTO.getRole());
         entity.setStatus(updateUserDTO.getStatus());
+
+        UserEntity savedEntity = userRepository.save(entity);
+
+        return toVO(savedEntity);
+    }
+
+    /**
+     * Update only the user's status.
+     *
+     * This is used by enable/disable buttons, so the frontend does not need to
+     * submit username, nickname and role again.
+     */
+    public UserVO updateUserStatus(Long id, String status) {
+        Optional<UserEntity> optionalUser = userRepository.findById(id);
+
+        if (!optionalUser.isPresent()) {
+            return null;
+        }
+
+        UserEntity entity = optionalUser.get();
+        entity.setStatus(status);
 
         UserEntity savedEntity = userRepository.save(entity);
 
