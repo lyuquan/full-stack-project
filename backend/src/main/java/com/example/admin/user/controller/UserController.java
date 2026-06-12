@@ -6,6 +6,7 @@ import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.dto.UpdateUserStatusDTO;
 import com.example.admin.user.service.UserService;
+import com.example.admin.user.vo.RoleOptionVO;
 import com.example.admin.user.vo.UserStatsVO;
 import com.example.admin.user.vo.UserVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 用户管理接口入口。
@@ -71,6 +73,19 @@ public class UserController {
         UserStatsVO stats = userService.getUserStats();
 
         return ApiResponse.success(stats);
+    }
+
+    /**
+     * 查询用户角色下拉选项。
+     *
+     * 这个接口给前端筛选表单和用户表单使用，避免前端把角色选项写死。
+     * 示例：GET /api/users/roles
+     */
+    @GetMapping("/roles")
+    public ApiResponse<List<RoleOptionVO>> listRoleOptions() {
+        List<RoleOptionVO> roles = userService.listRoleOptions();
+
+        return ApiResponse.success(roles);
     }
 
     /**

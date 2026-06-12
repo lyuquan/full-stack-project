@@ -6,6 +6,7 @@ import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.entity.UserEntity;
 import com.example.admin.user.repository.UserRepository;
+import com.example.admin.user.vo.RoleOptionVO;
 import com.example.admin.user.vo.UserStatsVO;
 import com.example.admin.user.vo.UserVO;
 import org.springframework.data.domain.Page;
@@ -105,6 +106,21 @@ public class UserService {
                 operatorCount,
                 readonlyCount
         );
+    }
+
+    /**
+     * Query role options used by frontend select boxes.
+     *
+     * For now the roles are fixed in code. Later, when we learn role management,
+     * this method can be changed to read options from a role table.
+     */
+    public List<RoleOptionVO> listRoleOptions() {
+        List<RoleOptionVO> roles = new ArrayList<RoleOptionVO>();
+        roles.add(new RoleOptionVO("超级管理员", "超级管理员"));
+        roles.add(new RoleOptionVO("运营管理员", "运营管理员"));
+        roles.add(new RoleOptionVO("只读用户", "只读用户"));
+
+        return roles;
     }
 
     /**

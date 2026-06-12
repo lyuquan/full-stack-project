@@ -28,6 +28,12 @@ const statsError = ref('')
 // userStats 保存后端统计接口返回的用户总数、启用数、禁用数和角色人数。
 const userStats = ref(null)
 
+// roleOptions 保存 GET /api/users/roles 返回的角色下拉选项。
+const roleOptions = ref([])
+
+// roleOptionsError 保存角色选项接口失败时的提示，避免下拉框无声失败。
+const roleOptionsError = ref('')
+
 // detailLoading 控制用户详情区域的加载状态。
 const detailLoading = ref(false)
 
@@ -171,6 +177,29 @@ async function loadUserStats() {
     statsError.value = '无法连接用户统计接口，请确认 Java 后端已经启动'
   } finally {
     statsLoading.value = false
+  }
+}
+
+/**
+ * 请求角色下拉选项。
+ *
+ * 前端不再把角色选项写死在页面里，而是从 GET /api/users/roles 获取。
+ * 这样以后后端调整角色列表时，页面下拉框可以跟着接口返回变化。
+ */
+async function loadRoleOptions() {
+  roleOptionsError.value = ''
+
+  try {
+    const response = await fetch('/api/users/roles')
+    const result = await response.json()
+
+    if (result.code === 200) {
+      roleOptions.value = result.data
+    } else {
+      roleOptionsError.value = result.message || '角色选项接口返回异常'
+    }
+  } catch (error) {
+    roleOptionsError.value = '无法连接角色选项接口，请确认 Java 后端已经启动'
   }
 }
 
@@ -444,7 +473,7 @@ function refreshUserData() {
  * 同时刷新系统状态和用户列表。
  */
 function refreshPageData() {
-  Promise.all([loadBackendInfo(), refreshUserData()])
+  Promise.all([loadBackendInfo(), loadRoleOptions(), refreshUserData()])
 }
 
 onMounted(() => {
@@ -612,9 +641,13 @@ onMounted(() => {
             <span>角色</span>
             <select v-model="searchForm.role">
               <option value="">全部角色</option>
-              <option value="超级管理员">超级管理员</option>
-              <option value="运营管理员">运营管理员</option>
-              <option value="只读用户">只读用户</option>
+              <option
+                v-for="role in roleOptions"
+                :key="role.value"
+                :value="role.value"
+              >
+                {{ role.label }}
+              </option>
             </select>
           </label>
 
@@ -669,9 +702,13 @@ onMounted(() => {
           <label>
             <span>角色</span>
             <select v-model="userForm.role">
-              <option>超级管理员</option>
-              <option>运营管理员</option>
-              <option>只读用户</option>
+              <option
+                v-for="role in roleOptions"
+                :key="role.value"
+                :value="role.value"
+              >
+                {{ role.label }}
+              </option>
             </select>
           </label>
 
@@ -690,6 +727,10 @@ onMounted(() => {
 
         <p v-if="saveMessage" class="status success form-message">
           {{ saveMessage }}
+        </p>
+
+        <p v-if="roleOptionsError" class="status error form-message">
+          {{ roleOptionsError }}
         </p>
       </section>
 

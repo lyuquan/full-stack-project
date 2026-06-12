@@ -575,6 +575,71 @@ README.md
 - `@Valid`：Controller 参数上有这个注解时，DTO 里的校验注解才会生效。
 - 校验失败会被 `GlobalExceptionHandler` 捕获，并统一返回 `ApiResponse.error(400, message)`。
 
+### 第 17 步：角色选项接口
+
+目标：新增角色下拉选项接口，让前端从后端获取角色列表，而不是把角色选项写死在 Vue 页面里。
+
+接口：
+
+```text
+GET /api/users/roles
+```
+
+返回示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "value": "超级管理员",
+      "label": "超级管理员"
+    },
+    {
+      "value": "运营管理员",
+      "label": "运营管理员"
+    },
+    {
+      "value": "只读用户",
+      "label": "只读用户"
+    }
+  ]
+}
+```
+
+为什么要做这一步：
+
+- 后台系统里常见很多下拉选项，比如角色、状态、部门、分类，这类接口通常叫“字典接口”或“选项接口”。
+- 前端不应该到处写死业务选项，否则后端规则变了，前端也要到处找地方改。
+- 当前角色仍然先写在 Java 代码里，后面学习“角色管理”时，可以再改成从数据库角色表读取。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/user/vo/RoleOptionVO.java
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `RoleOptionVO.java`：定义角色选项返回结构，`value` 是提交给后端的真实值，`label` 是页面显示文字。
+- `UserController.java`：新增 `GET /api/users/roles` 接口，返回角色选项列表。
+- `UserService.java`：新增 `listRoleOptions`，先用固定列表返回三个角色。
+- `App.vue`：新增 `loadRoleOptions` 请求角色选项，并用 `v-for` 渲染筛选表单和用户表单的角色下拉框。
+- `README.md`：记录第 17 步的接口、原因和文件职责。
+
+你需要理解：
+
+- 选项接口：专门给前端下拉框、单选框等控件提供可选值的接口。
+- `value`：真正提交给后端和保存到数据库的值。
+- `label`：给用户看的显示文案。
+- `v-for="role in roleOptions"`：Vue 根据接口返回的数组循环渲染 `<option>`。
+- `/api/users/roles` 也要写在 `/api/users/{id}` 前面，避免 `roles` 被当成用户 ID。
+
 ## 启动后端
 
 进入后端目录：
