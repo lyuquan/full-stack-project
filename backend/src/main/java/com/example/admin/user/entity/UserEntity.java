@@ -5,7 +5,10 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
 import javax.persistence.Table;
+import java.time.LocalDateTime;
 
 /**
  * User database entity.
@@ -50,6 +53,40 @@ public class UserEntity {
     @Column(nullable = false, length = 20)
     private String status;
 
+    /**
+     * Time when this row was created.
+     */
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    /**
+     * Time when this row was last updated.
+     */
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    /**
+     * Runs automatically before inserting a new row.
+     *
+     * We set both createdAt and updatedAt when the user is first saved.
+     */
+    @PrePersist
+    public void beforeCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    /**
+     * Runs automatically before updating an existing row.
+     *
+     * Only updatedAt changes here; createdAt should keep the original value.
+     */
+    @PreUpdate
+    public void beforeUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public Long getId() {
         return id;
     }
@@ -88,5 +125,21 @@ public class UserEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

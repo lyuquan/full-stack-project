@@ -167,7 +167,9 @@ public class UserService {
                 entity.getUsername(),
                 entity.getNickname(),
                 entity.getRole(),
-                entity.getStatus()
+                entity.getStatus(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
         );
     }
 

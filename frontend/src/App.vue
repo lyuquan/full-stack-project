@@ -204,6 +204,20 @@ function changePageSize() {
 }
 
 /**
+ * Format backend LocalDateTime string for display.
+ *
+ * Spring Boot returns LocalDateTime like 2026-06-12T16:00:00, and the page
+ * displays it as a local date time string that is easier to read.
+ */
+function formatDateTime(value) {
+  if (!value) {
+    return '-'
+  }
+
+  return new Date(value).toLocaleString()
+}
+
+/**
  * 提交用户表单。
  *
  * 新增模式：POST /api/users
@@ -468,6 +482,10 @@ onMounted(() => {
                 {{ selectedUser.status === 'enabled' ? '启用' : '禁用' }}
               </span>
             </dd>
+            <dt>创建时间</dt>
+            <dd>{{ formatDateTime(selectedUser.createdAt) }}</dd>
+            <dt>更新时间</dt>
+            <dd>{{ formatDateTime(selectedUser.updatedAt) }}</dd>
           </dl>
         </div>
 
@@ -599,6 +617,7 @@ onMounted(() => {
                   <th>昵称</th>
                   <th>角色</th>
                   <th>状态</th>
+                  <th>更新时间</th>
                   <th>操作</th>
                 </tr>
               </thead>
@@ -613,6 +632,7 @@ onMounted(() => {
                       {{ user.status === 'enabled' ? '启用' : '禁用' }}
                     </span>
                   </td>
+                  <td>{{ formatDateTime(user.updatedAt) }}</td>
                   <td>
                     <div class="action-buttons">
                       <button class="link-button" type="button" @click="loadUserDetail(user.id)">

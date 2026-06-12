@@ -388,6 +388,45 @@ README.md
 - `existsByUsernameAndIdNot`：编辑时使用，表示“这个账号是否被其他用户使用”。
 - `BusinessException`：Service 发现业务不允许时抛出，Controller 不需要到处手写重复判断。
 
+### 第 13 步：创建时间和更新时间
+
+目标：给用户数据增加 `createdAt` 和 `updatedAt`，让列表和详情能展示数据创建、最后修改时间。
+
+为什么要做这一步：
+
+- 后台系统经常需要知道一条数据什么时候创建、什么时候最后修改。
+- 创建时间和更新时间属于通用审计字段，很多数据库表都会有。
+- 这些字段不应该由前端传，而应该由后端在保存数据时自动生成。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/user/entity/UserEntity.java
+backend/src/main/java/com/example/admin/user/vo/UserVO.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+frontend/src/App.vue
+frontend/src/style.css
+README.md
+```
+
+每个文件的作用：
+
+- `UserEntity.java`：新增 `createdAt` 和 `updatedAt` 字段，并用 JPA 回调自动维护时间。
+- `UserVO.java`：把创建时间和更新时间暴露给前端页面。
+- `UserService.java`：在 `toVO` 里把 Entity 的时间字段转换到 VO。
+- `App.vue`：详情展示创建时间和更新时间，列表展示更新时间。
+- `style.css`：表格多了一列，所以增加最小宽度，避免内容挤压。
+- `README.md`：记录第 13 步的学习目标和文件职责。
+
+你需要理解：
+
+- `LocalDateTime`：Java 里常用的日期时间类型。
+- `@Column(nullable = false)`：数据库字段不能为空。
+- `@PrePersist`：JPA 在新增保存前自动调用，适合设置创建时间。
+- `@PreUpdate`：JPA 在更新保存前自动调用，适合刷新更新时间。
+- `createdAt`：创建后一般不再改变。
+- `updatedAt`：每次编辑、启用禁用等更新操作后都会变化。
+
 ## 启动后端
 
 进入后端目录：

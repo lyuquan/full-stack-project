@@ -1,5 +1,7 @@
 package com.example.admin.user.vo;
 
+import java.time.LocalDateTime;
+
 /**
  * User view object returned to the frontend.
  *
@@ -33,15 +35,35 @@ public class UserVO {
      */
     private String status;
 
+    /**
+     * Time when this user was created.
+     */
+    private LocalDateTime createdAt;
+
+    /**
+     * Time when this user was last updated.
+     */
+    private LocalDateTime updatedAt;
+
     public UserVO() {
     }
 
-    public UserVO(Long id, String username, String nickname, String role, String status) {
+    public UserVO(
+            Long id,
+            String username,
+            String nickname,
+            String role,
+            String status,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {
         this.id = id;
         this.username = username;
         this.nickname = nickname;
         this.role = role;
         this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public Long getId() {
@@ -82,5 +104,21 @@ public class UserVO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
