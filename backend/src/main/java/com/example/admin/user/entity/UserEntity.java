@@ -1,48 +1,54 @@
-package com.example.admin.user.vo;
+package com.example.admin.user.entity;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 /**
- * User view object returned to the frontend.
+ * User database entity.
  *
- * VO means View Object. It controls what fields are exposed to the page.
- * Database fields are not always returned directly in real projects.
+ * Entity maps Java objects to database table rows.
+ * This class maps to the sys_user table.
  */
-public class UserVO {
+@Entity
+@Table(name = "sys_user")
+public class UserEntity {
 
     /**
-     * User ID.
+     * Primary key.
+     *
+     * IDENTITY means the database generates the ID when inserting a new row.
      */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
      * Login username.
      */
+    @Column(nullable = false, length = 30)
     private String username;
 
     /**
-     * Display nickname.
+     * Display name shown in the admin page.
      */
+    @Column(nullable = false, length = 30)
     private String nickname;
 
     /**
      * User role name.
      */
+    @Column(nullable = false, length = 30)
     private String role;
 
     /**
      * User status: enabled or disabled.
      */
+    @Column(nullable = false, length = 20)
     private String status;
-
-    public UserVO() {
-    }
-
-    public UserVO(Long id, String username, String nickname, String role, String status) {
-        this.id = id;
-        this.username = username;
-        this.nickname = nickname;
-        this.role = role;
-        this.status = status;
-    }
 
     public Long getId() {
         return id;

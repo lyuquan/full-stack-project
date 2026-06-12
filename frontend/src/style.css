@@ -121,6 +121,7 @@ h2 {
 }
 
 .status-panel,
+.search-panel,
 .form-panel {
   margin-bottom: 20px;
 }
@@ -154,6 +155,36 @@ h2 {
 .error {
   color: #b91c1c;
   font-weight: 700;
+}
+
+/* 筛选表单：把查询条件和按钮放在一行。 */
+.search-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 160px auto auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.search-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.search-form span {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.search-form input,
+.search-form select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #172033;
+  background: #ffffff;
 }
 
 /* 用户表单：把账号、昵称、角色、状态和提交按钮放在一行。 */
@@ -256,6 +287,11 @@ td {
   font-size: 14px;
 }
 
+.empty-cell {
+  color: #64748b;
+  text-align: center;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -335,6 +371,10 @@ td {
   }
 
   .user-form {
+    grid-template-columns: 1fr;
+  }
+
+  .search-form {
     grid-template-columns: 1fr;
   }
 }

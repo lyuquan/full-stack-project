@@ -38,21 +38,11 @@ GET /api/system/hello
 GET /api/users
 ```
 
-本步骤新增的后端文件：
-
-```text
-backend/src/main/java/com/example/admin/user/controller/UserController.java
-backend/src/main/java/com/example/admin/user/service/UserService.java
-backend/src/main/java/com/example/admin/user/vo/UserVO.java
-```
-
 分层含义：
 
 - `Controller`：接收前端请求，返回接口结果。
 - `Service`：处理业务逻辑，后续会在这里调用数据库。
 - `VO`：View Object，表示返回给前端页面展示的数据结构。
-
-当前用户数据还没有接数据库，而是在 `UserService` 里模拟出来。这样可以先把接口分层学清楚。
 
 ### 第 3 步：新增用户接口和 DTO
 
@@ -75,41 +65,16 @@ POST /api/users
 }
 ```
 
-本步骤新增的后端文件：
-
-```text
-backend/src/main/java/com/example/admin/user/dto/CreateUserDTO.java
-```
-
-本步骤修改的后端文件：
-
-```text
-backend/src/main/java/com/example/admin/user/controller/UserController.java
-backend/src/main/java/com/example/admin/user/service/UserService.java
-```
-
 你需要理解：
 
 - `DTO`：Data Transfer Object，用来接收前端传给后端的请求参数。
 - `VO`：View Object，用来控制后端返回给前端的数据结构。
 - `@RequestBody`：告诉 Spring Boot 从请求体 JSON 里读取参数，并转换成 Java 对象。
 - `POST`：通常用于新增数据，`GET` 通常用于查询数据。
-- 当前新增用户只保存在内存列表里，重启后端后会恢复初始数据；后续接数据库后才会真正持久化。
 
 ### 第 4 步：接口参数校验
 
 目标：让后端拦住无效请求，比如账号为空、昵称为空、状态值不合法。
-
-本步骤新增或修改：
-
-```text
-backend/pom.xml
-backend/src/main/java/com/example/admin/common/ApiResponse.java
-backend/src/main/java/com/example/admin/common/GlobalExceptionHandler.java
-backend/src/main/java/com/example/admin/user/dto/CreateUserDTO.java
-backend/src/main/java/com/example/admin/user/controller/UserController.java
-frontend/src/App.vue
-```
 
 你需要理解：
 
@@ -149,32 +114,6 @@ PUT /api/users/{id}
 PUT /api/users/1
 ```
 
-请求体示例：
-
-```json
-{
-  "username": "admin",
-  "nickname": "系统管理员",
-  "role": "超级管理员",
-  "status": "enabled"
-}
-```
-
-本步骤新增：
-
-```text
-backend/src/main/java/com/example/admin/user/dto/UpdateUserDTO.java
-```
-
-本步骤修改：
-
-```text
-backend/src/main/java/com/example/admin/user/controller/UserController.java
-backend/src/main/java/com/example/admin/user/service/UserService.java
-frontend/src/App.vue
-frontend/src/style.css
-```
-
 你需要理解：
 
 - `PUT`：通常用于修改一条已有数据。
@@ -198,23 +137,106 @@ DELETE /api/users/{id}
 DELETE /api/users/1
 ```
 
-本步骤修改：
+你需要理解：
+
+- `DELETE`：通常用于删除一条已有数据。
+- `@DeleteMapping("/{id}")`：声明一个删除接口，并从 URL 里接收用户 ID。
+- `Service` 里的 `deleteUser`：负责真正删除用户。
+- 前端删除流程：点击删除、弹出确认框、发送 `DELETE` 请求、成功后刷新列表。
+
+### 第 7 步：接入 H2 数据库和 Repository 层
+
+目标：把用户数据从内存列表改成数据库表，让新增、编辑、删除后的数据在后端重启后仍然保留。
+
+新增或修改：
+
+```text
+backend/pom.xml
+backend/src/main/resources/application.yml
+backend/src/main/java/com/example/admin/user/config/UserDataInitializer.java
+backend/src/main/java/com/example/admin/user/entity/UserEntity.java
+backend/src/main/java/com/example/admin/user/repository/UserRepository.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+backend/src/main/java/com/example/admin/user/vo/UserVO.java
+```
+
+新的后端分层：
+
+```text
+Controller -> Service -> Repository -> Database
+```
+
+你需要理解：
+
+- `Entity`：数据库表对应的 Java 对象，比如 `UserEntity` 对应 `sys_user` 表。
+- `@Entity`：告诉 JPA 这个类是一张数据库表的映射。
+- `@Table(name = "sys_user")`：指定数据库表名。
+- `@Id`：声明主键字段。
+- `@GeneratedValue`：声明 ID 由数据库生成。
+- `Repository`：数据库访问层，负责查库、保存、删除。
+- `JpaRepository<UserEntity, Long>`：第一个泛型是表对应的 Entity，第二个泛型是主键 ID 类型。
+- `CommandLineRunner`：Spring Boot 启动完成后自动执行的初始化逻辑。
+- `UserDataInitializer`：当用户表为空时，自动插入 3 条演示用户。
+- H2 文件数据库会生成在 `backend/data` 目录下，重启后端后数据仍然保留。
+
+H2 控制台：
+
+```text
+http://localhost:8080/h2-console
+```
+
+连接信息：
+
+```text
+JDBC URL: jdbc:h2:file:./data/admin
+User Name: sa
+Password: 留空
+```
+
+### 第 8 步：用户查询筛选
+
+目标：让用户列表支持按关键字和状态筛选，学习后台系统里最常见的“查询参数”接口。
+
+接口：
+
+```text
+GET /api/users?keyword=admin&status=enabled
+```
+
+为什么要做这一步：
+
+- 后台系统的列表页通常都要支持查询，比如按账号、昵称、状态筛选。
+- 前端筛选条件一般不会放到请求体里，而是放到 URL 查询参数里。
+- 后端用 `@RequestParam` 接收查询参数，再传给 Service 和 Repository 查数据库。
+
+这一步修改了什么：
 
 ```text
 backend/src/main/java/com/example/admin/user/controller/UserController.java
 backend/src/main/java/com/example/admin/user/service/UserService.java
+backend/src/main/java/com/example/admin/user/repository/UserRepository.java
 frontend/src/App.vue
 frontend/src/style.css
 README.md
 ```
 
+每个文件的作用：
+
+- `UserController.java`：给 `GET /api/users` 增加 `keyword` 和 `status` 两个可选查询参数。
+- `UserService.java`：把查询条件传给 Repository，并把数据库 Entity 转成前端 VO。
+- `UserRepository.java`：新增 `searchUsers`，真正负责按账号、昵称、状态查数据库。
+- `App.vue`：新增筛选表单，把关键字和状态拼成 URL 查询参数。
+- `style.css`：给筛选表单补布局样式。
+- `README.md`：记录第 8 步的学习目标和文件职责。
+
 你需要理解：
 
-- `DELETE`：通常用于删除一条已有数据。
-- `@DeleteMapping("/{id}")`：声明一个删除接口，并从 URL 里接收用户 ID。
-- `Service` 里的 `deleteUser`：负责真正从内存列表中移除用户。
-- 前端删除流程：点击删除、弹出确认框、发送 `DELETE` 请求、成功后刷新列表。
-- 当前删除只影响内存数据，重启后端后会恢复初始用户；接数据库后才会真正持久化。
+- `@RequestParam`：从 URL 查询参数里取值，比如 `?keyword=admin`。
+- `required = false`：表示这个参数可以不传。
+- `URLSearchParams`：前端用来拼接查询参数，避免手写字符串出错。
+- `@Query`：在 Repository 里自定义查询语句。
+- `:keyword` 和 `:status`：查询语句里的命名参数，对应方法参数上的 `@Param`。
+- `LIKE '%关键字%'`：数据库里的模糊查询，用来匹配包含关键字的账号或昵称。
 
 ## 启动后端
 
@@ -243,12 +265,6 @@ http://localhost:8080
 http://localhost:8080/api/system/hello
 http://localhost:8080/api/users
 ```
-
-说明：
-
-- `.mvn/settings.xml` 是当前项目专用 Maven 配置。
-- 它用来避开本机全局 Maven 镜像配置问题。
-- `.tools` 目录里是项目本地下载的 Maven 工具。
 
 ## 启动前端
 

@@ -7,6 +7,9 @@ frontend/dist/
 # Backend Maven build output.
 backend/target/
 
+# Local H2 database files generated while running backend.
+backend/data/
+
 # Local Maven tool downloaded for this machine.
 .tools/
 

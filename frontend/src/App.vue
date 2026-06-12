@@ -31,6 +31,12 @@ const deleteLoadingId = ref(null)
 // editingUserId 为 null 表示新增模式，有值表示正在编辑某个用户。
 const editingUserId = ref(null)
 
+// searchForm 保存用户列表筛选条件，会拼到 GET /api/users 的查询参数里。
+const searchForm = reactive({
+  keyword: '',
+  status: ''
+})
+
 // userForm 是表单数据，会被提交给 POST /api/users 或 PUT /api/users/{id}。
 const userForm = reactive({
   username: '',
@@ -66,14 +72,29 @@ async function loadBackendInfo() {
 }
 
 /**
- * 请求用户列表接口，把后端返回的用户数组展示到表格里。
+ * 根据筛选条件请求用户列表。
+ *
+ * URLSearchParams 用来安全拼接查询参数，避免手写字符串时漏掉 ?、& 或编码。
  */
 async function loadUsers() {
   userLoading.value = true
   userError.value = ''
 
+  const params = new URLSearchParams()
+
+  if (searchForm.keyword.trim()) {
+    params.set('keyword', searchForm.keyword.trim())
+  }
+
+  if (searchForm.status) {
+    params.set('status', searchForm.status)
+  }
+
+  const queryString = params.toString()
+  const url = queryString ? `/api/users?${queryString}` : '/api/users'
+
   try {
-    const response = await fetch('/api/users')
+    const response = await fetch(url)
     const result = await response.json()
 
     if (result.code === 200) {
@@ -182,6 +203,15 @@ function startEdit(user) {
 }
 
 /**
+ * 清空筛选条件，并重新请求完整用户列表。
+ */
+function resetSearch() {
+  searchForm.keyword = ''
+  searchForm.status = ''
+  loadUsers()
+}
+
+/**
  * 重置表单，让页面回到新增用户模式。
  */
 function resetForm() {
@@ -218,8 +248,8 @@ onMounted(() => {
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Step 6</p>
-          <h1>删除用户接口</h1>
+          <p class="eyebrow">Step 8</p>
+          <h1>用户查询筛选</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
           重新请求
@@ -242,6 +272,39 @@ onMounted(() => {
             <dd>{{ backendInfo.module }}</dd>
           </dl>
         </div>
+      </section>
+
+      <section class="panel search-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">GET /api/users?keyword=&status=</p>
+            <h2>筛选用户</h2>
+          </div>
+        </div>
+
+        <form class="search-form" @submit.prevent="loadUsers">
+          <label>
+            <span>关键字</span>
+            <input v-model="searchForm.keyword" placeholder="账号或昵称" />
+          </label>
+
+          <label>
+            <span>状态</span>
+            <select v-model="searchForm.status">
+              <option value="">全部状态</option>
+              <option value="enabled">启用</option>
+              <option value="disabled">禁用</option>
+            </select>
+          </label>
+
+          <button class="submit-button" type="submit" :disabled="userLoading">
+            {{ userLoading ? '查询中...' : '查询' }}
+          </button>
+
+          <button class="secondary-button" type="button" @click="resetSearch">
+            重置
+          </button>
+        </form>
       </section>
 
       <section class="panel form-panel">
@@ -355,6 +418,10 @@ onMounted(() => {
                     </button>
                   </div>
                 </td>
+              </tr>
+
+              <tr v-if="users.length === 0">
+                <td class="empty-cell" colspan="6">没有匹配的用户</td>
               </tr>
             </tbody>
           </table>

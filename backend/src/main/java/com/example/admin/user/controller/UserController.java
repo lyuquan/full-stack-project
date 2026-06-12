@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
@@ -42,10 +43,14 @@ public class UserController {
      * Query user list.
      *
      * Request: GET /api/users
+     * Request with filters: GET /api/users?keyword=admin&status=enabled
      */
     @GetMapping
-    public ApiResponse<List<UserVO>> listUsers() {
-        List<UserVO> users = userService.listUsers();
+    public ApiResponse<List<UserVO>> listUsers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status
+    ) {
+        List<UserVO> users = userService.listUsers(keyword, status);
 
         return ApiResponse.success(users);
     }
