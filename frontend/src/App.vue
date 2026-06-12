@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 // systemLoading controls the loading state for the backend health panel.
 const systemLoading = ref(false)
@@ -13,25 +13,31 @@ const backendInfo = ref(null)
 // userLoading controls the loading state for the user table.
 const userLoading = ref(false)
 
-// userError stores the error message when /api/users fails.
+// userError stores the error message for user list/create/update requests.
 const userError = ref('')
 
 // users stores the user array returned by the backend.
 const users = ref([])
 
-// createLoading controls the submit button state when creating a user.
-const createLoading = ref(false)
+// saveLoading controls the submit button state when creating or updating.
+const saveLoading = ref(false)
 
-// createMessage gives quick feedback after a user is created.
-const createMessage = ref('')
+// saveMessage gives quick feedback after a user is saved.
+const saveMessage = ref('')
 
-// userForm is the form data sent to POST /api/users.
+// editingUserId is null in create mode, and has a user ID in edit mode.
+const editingUserId = ref(null)
+
+// userForm is the form data sent to POST /api/users or PUT /api/users/{id}.
 const userForm = reactive({
   username: '',
   nickname: '',
   role: '运营管理员',
   status: 'enabled'
 })
+
+// A computed value keeps template text simple and avoids duplicated conditions.
+const isEditing = computed(() => editingUserId.value !== null)
 
 /**
  * Load backend health information.
@@ -80,19 +86,22 @@ async function loadUsers() {
 }
 
 /**
- * Create a new user.
+ * Submit the form.
  *
- * The backend validates the JSON body with @Valid and CreateUserDTO rules.
- * If validation fails, the backend returns code 400 and a readable message.
+ * Create mode uses POST /api/users.
+ * Edit mode uses PUT /api/users/{id}.
  */
-async function createUser() {
-  createLoading.value = true
-  createMessage.value = ''
+async function saveUser() {
+  saveLoading.value = true
+  saveMessage.value = ''
   userError.value = ''
 
+  const url = isEditing.value ? `/api/users/${editingUserId.value}` : '/api/users'
+  const method = isEditing.value ? 'PUT' : 'POST'
+
   try {
-    const response = await fetch('/api/users', {
-      method: 'POST',
+    const response = await fetch(url, {
+      method,
       headers: {
         'Content-Type': 'application/json'
       },
@@ -101,19 +110,44 @@ async function createUser() {
     const result = await response.json()
 
     if (result.code === 200) {
-      createMessage.value = `已新增用户：${result.data.nickname}`
-      userForm.username = ''
-      userForm.nickname = ''
+      saveMessage.value = isEditing.value
+        ? `已更新用户：${result.data.nickname}`
+        : `已新增用户：${result.data.nickname}`
 
+      resetForm()
       await loadUsers()
     } else {
-      userError.value = result.message || '新增用户失败'
+      userError.value = result.message || '保存用户失败'
     }
   } catch (error) {
-    userError.value = '新增用户请求失败，请确认 Java 后端已经启动'
+    userError.value = '保存用户请求失败，请确认 Java 后端已经启动'
   } finally {
-    createLoading.value = false
+    saveLoading.value = false
   }
+}
+
+/**
+ * Fill the form with table row data and switch to edit mode.
+ */
+function startEdit(user) {
+  editingUserId.value = user.id
+  saveMessage.value = ''
+  userError.value = ''
+  userForm.username = user.username
+  userForm.nickname = user.nickname
+  userForm.role = user.role
+  userForm.status = user.status
+}
+
+/**
+ * Reset the form to create mode.
+ */
+function resetForm() {
+  editingUserId.value = null
+  userForm.username = ''
+  userForm.nickname = ''
+  userForm.role = '运营管理员'
+  userForm.status = 'enabled'
 }
 
 /**
@@ -142,8 +176,8 @@ onMounted(() => {
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Step 4</p>
-          <h1>接口参数校验</h1>
+          <p class="eyebrow">Step 5</p>
+          <h1>编辑用户接口</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
           重新请求
@@ -171,12 +205,22 @@ onMounted(() => {
       <section class="panel form-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">POST /api/users + @Valid</p>
-            <h2>新增用户</h2>
+            <p class="eyebrow">
+              {{ isEditing ? `PUT /api/users/${editingUserId}` : 'POST /api/users' }}
+            </p>
+            <h2>{{ isEditing ? '编辑用户' : '新增用户' }}</h2>
           </div>
+          <button
+            v-if="isEditing"
+            class="secondary-button"
+            type="button"
+            @click="resetForm"
+          >
+            取消编辑
+          </button>
         </div>
 
-        <form class="user-form" @submit.prevent="createUser">
+        <form class="user-form" @submit.prevent="saveUser">
           <label>
             <span>账号</span>
             <input v-model="userForm.username" placeholder="例如 zhangsan" />
@@ -204,20 +248,20 @@ onMounted(() => {
             </select>
           </label>
 
-          <button class="submit-button" type="submit" :disabled="createLoading">
-            {{ createLoading ? '提交中...' : '新增用户' }}
+          <button class="submit-button" type="submit" :disabled="saveLoading">
+            {{ saveLoading ? '提交中...' : isEditing ? '保存修改' : '新增用户' }}
           </button>
         </form>
 
-        <p v-if="createMessage" class="status success form-message">
-          {{ createMessage }}
+        <p v-if="saveMessage" class="status success form-message">
+          {{ saveMessage }}
         </p>
       </section>
 
       <section class="panel table-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">Controller -> Service -> DTO/VO</p>
+            <p class="eyebrow">GET / POST / PUT</p>
             <h2>用户管理</h2>
           </div>
           <button class="secondary-button" type="button" @click="loadUsers">
@@ -240,6 +284,7 @@ onMounted(() => {
                 <th>昵称</th>
                 <th>角色</th>
                 <th>状态</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -252,6 +297,11 @@ onMounted(() => {
                   <span class="badge" :class="user.status">
                     {{ user.status === 'enabled' ? '启用' : '禁用' }}
                   </span>
+                </td>
+                <td>
+                  <button class="link-button" type="button" @click="startEdit(user)">
+                    编辑
+                  </button>
                 </td>
               </tr>
             </tbody>

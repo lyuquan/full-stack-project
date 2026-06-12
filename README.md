@@ -133,6 +133,55 @@ frontend/src/App.vue
 
 这一点很重要：前端校验只是提升体验，后端校验才是真正的兜底。
 
+### 第 5 步：编辑用户接口
+
+目标：给用户列表增加“编辑”能力，前端点击编辑后回填表单，提交时调用后端更新接口。
+
+接口：
+
+```text
+PUT /api/users/{id}
+```
+
+请求示例：
+
+```text
+PUT /api/users/1
+```
+
+请求体示例：
+
+```json
+{
+  "username": "admin",
+  "nickname": "系统管理员",
+  "role": "超级管理员",
+  "status": "enabled"
+}
+```
+
+本步骤新增：
+
+```text
+backend/src/main/java/com/example/admin/user/dto/UpdateUserDTO.java
+```
+
+本步骤修改：
+
+```text
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+frontend/src/App.vue
+frontend/src/style.css
+```
+
+你需要理解：
+
+- `PUT`：通常用于修改一条已有数据。
+- `@PathVariable`：从 URL 路径里读取变量，比如 `/api/users/1` 里的 `1`。
+- `UpdateUserDTO`：编辑用户时的请求参数对象。
+- 前端编辑模式：点击表格“编辑”后，把当前行数据填入表单，再提交 `PUT` 请求。
+
 ## 启动后端
 
 进入后端目录：

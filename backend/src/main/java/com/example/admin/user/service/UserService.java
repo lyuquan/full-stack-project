@@ -1,6 +1,7 @@
 package com.example.admin.user.service;
 
 import com.example.admin.user.dto.CreateUserDTO;
+import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.vo.UserVO;
 import org.springframework.stereotype.Service;
 
@@ -64,5 +65,26 @@ public class UserService {
         nextId = nextId + 1;
 
         return user;
+    }
+
+    /**
+     * Update an existing user by ID.
+     *
+     * The current step still uses the in-memory list. Later, this method will
+     * become an UPDATE statement in the database.
+     */
+    public UserVO updateUser(Long id, UpdateUserDTO updateUserDTO) {
+        for (UserVO user : USERS) {
+            if (user.getId().equals(id)) {
+                user.setUsername(updateUserDTO.getUsername());
+                user.setNickname(updateUserDTO.getNickname());
+                user.setRole(updateUserDTO.getRole());
+                user.setStatus(updateUserDTO.getStatus());
+
+                return user;
+            }
+        }
+
+        return null;
     }
 }

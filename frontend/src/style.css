@@ -234,7 +234,7 @@ dd {
 
 table {
   width: 100%;
-  min-width: 640px;
+  min-width: 720px;
   border-collapse: collapse;
 }
 
@@ -276,6 +276,19 @@ td {
 .badge.disabled {
   color: #b91c1c;
   background: #fee2e2;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  color: #2563eb;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.link-button:hover {
+  color: #1d4ed8;
 }
 
 /* 手机屏幕下改成上下布局，避免左侧菜单挤压内容。 */
