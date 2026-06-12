@@ -127,6 +127,7 @@ h2 {
 }
 
 .status-panel,
+.stats-panel,
 .detail-panel,
 .search-panel,
 .form-panel {
@@ -162,6 +163,34 @@ h2 {
 .error {
   color: #b91c1c;
   font-weight: 700;
+}
+
+/* 统计卡片：展示用户总数、状态数量和角色分布。 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stats-item {
+  display: grid;
+  gap: 8px;
+  min-height: 82px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.stats-item span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stats-item strong {
+  color: #172033;
+  font-size: 26px;
 }
 
 /* 筛选表单：关键字、状态、角色、每页数量和按钮放在一行。 */
@@ -406,7 +435,8 @@ td {
   }
 
   .user-form,
-  .search-form {
+  .search-form,
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 

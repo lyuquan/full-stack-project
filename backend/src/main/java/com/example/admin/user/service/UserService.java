@@ -6,6 +6,7 @@ import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.entity.UserEntity;
 import com.example.admin.user.repository.UserRepository;
+import com.example.admin.user.vo.UserStatsVO;
 import com.example.admin.user.vo.UserVO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -80,6 +81,30 @@ public class UserService {
         }
 
         return toVO(optionalUser.get());
+    }
+
+    /**
+     * Query summary numbers for the user dashboard.
+     *
+     * These values come from database count queries, not from the current page list.
+     * That means the statistics still represent all users even when the table is paginated.
+     */
+    public UserStatsVO getUserStats() {
+        long totalCount = userRepository.count();
+        long enabledCount = userRepository.countByStatus("enabled");
+        long disabledCount = userRepository.countByStatus("disabled");
+        long superAdminCount = userRepository.countByRole("超级管理员");
+        long operatorCount = userRepository.countByRole("运营管理员");
+        long readonlyCount = userRepository.countByRole("只读用户");
+
+        return new UserStatsVO(
+                totalCount,
+                enabledCount,
+                disabledCount,
+                superAdminCount,
+                operatorCount,
+                readonlyCount
+        );
     }
 
     /**

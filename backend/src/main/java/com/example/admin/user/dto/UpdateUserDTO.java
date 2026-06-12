@@ -28,8 +28,12 @@ public class UpdateUserDTO {
 
     /**
      * Role name.
+     *
+     * @Pattern restricts role to the three roles supported by the current page.
+     * This prevents API clients from editing a user into an unsupported role.
      */
     @NotBlank(message = "角色不能为空")
+    @Pattern(regexp = "超级管理员|运营管理员|只读用户", message = "角色只能是 超级管理员、运营管理员 或 只读用户")
     private String role;
 
     /**

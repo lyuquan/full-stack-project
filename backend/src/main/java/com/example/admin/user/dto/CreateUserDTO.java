@@ -31,8 +31,12 @@ public class CreateUserDTO {
 
     /**
      * Role name.
+     *
+     * @Pattern restricts role to the three roles supported by the current page.
+     * Frontend select boxes improve user experience, but backend validation is the real protection.
      */
     @NotBlank(message = "角色不能为空")
+    @Pattern(regexp = "超级管理员|运营管理员|只读用户", message = "角色只能是 超级管理员、运营管理员 或 只读用户")
     private String role;
 
     /**

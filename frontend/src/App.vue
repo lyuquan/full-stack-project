@@ -19,6 +19,15 @@ const userError = ref('')
 // users 保存当前页的用户数组，它来自后端返回的 data.records。
 const users = ref([])
 
+// statsLoading 控制统计卡片的加载状态。
+const statsLoading = ref(false)
+
+// statsError 保存 GET /api/users/stats 请求失败时的错误提示。
+const statsError = ref('')
+
+// userStats 保存后端统计接口返回的用户总数、启用数、禁用数和角色人数。
+const userStats = ref(null)
+
 // detailLoading 控制用户详情区域的加载状态。
 const detailLoading = ref(false)
 
@@ -140,6 +149,32 @@ async function loadUsers() {
 }
 
 /**
+ * 请求用户统计接口。
+ *
+ * 统计数据来自 GET /api/users/stats，和分页列表分开请求。
+ * 这样当前列表只显示 5 条时，统计卡片仍然能展示全部用户的汇总数字。
+ */
+async function loadUserStats() {
+  statsLoading.value = true
+  statsError.value = ''
+
+  try {
+    const response = await fetch('/api/users/stats')
+    const result = await response.json()
+
+    if (result.code === 200) {
+      userStats.value = result.data
+    } else {
+      statsError.value = result.message || '用户统计接口返回异常'
+    }
+  } catch (error) {
+    statsError.value = '无法连接用户统计接口，请确认 Java 后端已经启动'
+  } finally {
+    statsLoading.value = false
+  }
+}
+
+/**
  * 查询单个用户详情。
  *
  * 这里故意请求 GET /api/users/{id}，不是直接用表格里的 user，
@@ -256,7 +291,7 @@ async function saveUser() {
       }
 
       resetForm()
-      await loadUsers()
+      await refreshUserData()
     } else {
       userError.value = result.message || '保存用户失败'
     }
@@ -299,11 +334,11 @@ async function deleteUser(user) {
       }
 
       saveMessage.value = `已删除用户：${user.nickname}`
-      await loadUsers()
+      await refreshUserData()
 
       if (users.value.length === 0 && pagination.page > 1) {
         pagination.page -= 1
-        await loadUsers()
+        await refreshUserData()
       }
     } else {
       userError.value = result.message || '删除用户失败'
@@ -352,7 +387,7 @@ async function changeUserStatus(user) {
         selectedUser.value = result.data
       }
 
-      await loadUsers()
+      await refreshUserData()
     } else {
       userError.value = result.message || `${actionText}用户失败`
     }
@@ -399,10 +434,17 @@ function resetForm() {
 }
 
 /**
+ * 同时刷新用户统计和用户列表。
+ */
+function refreshUserData() {
+  return Promise.all([loadUserStats(), loadUsers()])
+}
+
+/**
  * 同时刷新系统状态和用户列表。
  */
 function refreshPageData() {
-  Promise.all([loadBackendInfo(), loadUsers()])
+  Promise.all([loadBackendInfo(), refreshUserData()])
 }
 
 onMounted(() => {
@@ -447,6 +489,51 @@ onMounted(() => {
             <dt>接口模块</dt>
             <dd>{{ backendInfo.module }}</dd>
           </dl>
+        </div>
+      </section>
+
+      <section class="panel stats-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">GET /api/users/stats</p>
+            <h2>用户统计</h2>
+          </div>
+          <button class="secondary-button" type="button" @click="loadUserStats">
+            刷新统计
+          </button>
+        </div>
+
+        <p v-if="statsLoading" class="status muted">正在请求用户统计...</p>
+
+        <p v-else-if="statsError" class="status error">
+          {{ statsError }}
+        </p>
+
+        <div v-else-if="userStats" class="stats-grid">
+          <div class="stats-item">
+            <span>用户总数</span>
+            <strong>{{ userStats.totalCount }}</strong>
+          </div>
+          <div class="stats-item">
+            <span>启用用户</span>
+            <strong>{{ userStats.enabledCount }}</strong>
+          </div>
+          <div class="stats-item">
+            <span>禁用用户</span>
+            <strong>{{ userStats.disabledCount }}</strong>
+          </div>
+          <div class="stats-item">
+            <span>超级管理员</span>
+            <strong>{{ userStats.superAdminCount }}</strong>
+          </div>
+          <div class="stats-item">
+            <span>运营管理员</span>
+            <strong>{{ userStats.operatorCount }}</strong>
+          </div>
+          <div class="stats-item">
+            <span>只读用户</span>
+            <strong>{{ userStats.readonlyCount }}</strong>
+          </div>
         </div>
       </section>
 

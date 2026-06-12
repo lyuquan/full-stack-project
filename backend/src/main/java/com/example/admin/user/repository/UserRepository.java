@@ -32,6 +32,21 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     boolean existsByUsernameAndIdNot(String username, Long id);
 
     /**
+     * Count users by status.
+     *
+     * Spring Data JPA reads the method name and generates SQL like:
+     * select count(*) from sys_user where status = ?
+     */
+    long countByStatus(String status);
+
+    /**
+     * Count users by role.
+     *
+     * This method is used by the statistics API to calculate role distribution.
+     */
+    long countByRole(String role);
+
+    /**
      * Search users by optional keyword, role and status.
      *
      * Pageable tells JPA which page and how many records should be queried.

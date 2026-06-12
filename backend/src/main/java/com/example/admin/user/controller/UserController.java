@@ -6,6 +6,7 @@ import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.dto.UpdateUserStatusDTO;
 import com.example.admin.user.service.UserService;
+import com.example.admin.user.vo.UserStatsVO;
 import com.example.admin.user.vo.UserVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,6 +58,19 @@ public class UserController {
         PageResult<UserVO> result = userService.listUsers(keyword, role, status, page, size);
 
         return ApiResponse.success(result);
+    }
+
+    /**
+     * 查询用户统计数据。
+     *
+     * 这个接口必须放在 /{id} 详情接口前面，避免 /stats 被当成用户 ID。
+     * 示例：GET /api/users/stats
+     */
+    @GetMapping("/stats")
+    public ApiResponse<UserStatsVO> getUserStats() {
+        UserStatsVO stats = userService.getUserStats();
+
+        return ApiResponse.success(stats);
     }
 
     /**

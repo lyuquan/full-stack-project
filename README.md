@@ -471,6 +471,110 @@ README.md
 - `u.role = :role`：数据库查询条件，表示只查角色等于传入角色的用户。
 - `:role is null or :role = ''`：当角色参数为空时，不启用角色筛选。
 
+### 第 15 步：用户统计接口
+
+目标：新增一个用户统计接口，在页面上展示用户总数、启用数、禁用数和各角色人数。
+
+接口：
+
+```text
+GET /api/users/stats
+```
+
+返回示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "totalCount": 10,
+    "enabledCount": 8,
+    "disabledCount": 2,
+    "superAdminCount": 1,
+    "operatorCount": 7,
+    "readonlyCount": 2
+  }
+}
+```
+
+为什么要做这一步：
+
+- 后台首页和管理页经常需要展示统计数字，不能只看当前分页列表。
+- 统计接口通常单独设计，因为它返回的是汇总数据，不是一条用户详情，也不是用户列表。
+- 这一节可以学习 Spring Data JPA 的 `countBy...` 方法命名规则。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/user/vo/UserStatsVO.java
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+backend/src/main/java/com/example/admin/user/repository/UserRepository.java
+frontend/src/App.vue
+frontend/src/style.css
+README.md
+```
+
+每个文件的作用：
+
+- `UserStatsVO.java`：定义统计接口返回给前端的数据结构，比如 `totalCount`、`enabledCount`。
+- `UserController.java`：新增 `GET /api/users/stats` 接口入口，返回统一的 `ApiResponse<UserStatsVO>`。
+- `UserService.java`：调用 Repository 的计数方法，组装完整统计结果。
+- `UserRepository.java`：新增 `countByStatus` 和 `countByRole`，让 JPA 根据方法名自动生成计数 SQL。
+- `App.vue`：新增统计接口请求、统计加载状态、统计错误提示和统计卡片展示。
+- `style.css`：新增统计卡片布局，让统计数字在页面上更清晰。
+- `README.md`：记录第 15 步的学习目标、接口格式和每个文件职责。
+
+你需要理解：
+
+- `count()`：`JpaRepository` 自带方法，用来统计整张表总条数。
+- `countByStatus("enabled")`：Spring Data JPA 根据方法名生成 `where status = ?` 的计数 SQL。
+- `countByRole("运营管理员")`：根据角色字段统计人数。
+- `UserStatsVO`：专门给统计接口使用的 VO，不代表单个用户。
+- `/api/users/stats` 要写在 `/api/users/{id}` 前面，避免 `stats` 被当成用户 ID。
+- 统计数据和分页列表分开请求，分页只影响表格，不影响总数统计。
+
+### 第 16 步：角色字段参数校验
+
+目标：限制新增和编辑用户时的 `role` 字段，只允许提交当前系统支持的三个角色。
+
+允许的角色：
+
+```text
+超级管理员
+运营管理员
+只读用户
+```
+
+为什么要做这一步：
+
+- 前端下拉框只能提升用户体验，不能当成安全校验。
+- 别人可以用 Postman、curl 或浏览器控制台直接调用接口，传入页面上不存在的角色。
+- 后端必须对关键字段做兜底校验，保证数据库里不会保存无效业务数据。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/user/dto/CreateUserDTO.java
+backend/src/main/java/com/example/admin/user/dto/UpdateUserDTO.java
+README.md
+```
+
+每个文件的作用：
+
+- `CreateUserDTO.java`：给新增用户请求里的 `role` 字段加 `@Pattern`，限制只能是三个合法角色之一。
+- `UpdateUserDTO.java`：给编辑用户请求里的 `role` 字段加同样规则，避免编辑时改成非法角色。
+- `README.md`：记录第 16 步的学习目标、原因和文件职责。
+
+你需要理解：
+
+- `@NotBlank`：只负责校验不能为空，但不限制具体内容。
+- `@Pattern`：用正则表达式限制字段值必须匹配指定格式。
+- `超级管理员|运营管理员|只读用户`：正则里的 `|` 表示“或者”，也就是三个值任选一个。
+- `@Valid`：Controller 参数上有这个注解时，DTO 里的校验注解才会生效。
+- 校验失败会被 `GlobalExceptionHandler` 捕获，并统一返回 `ApiResponse.error(400, message)`。
+
 ## 启动后端
 
 进入后端目录：
