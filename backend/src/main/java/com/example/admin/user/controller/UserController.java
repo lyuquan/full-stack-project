@@ -5,6 +5,7 @@ import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.service.UserService;
 import com.example.admin.user.vo.UserVO;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,8 +54,6 @@ public class UserController {
      * Create user.
      *
      * Request: POST /api/users
-     * @RequestBody reads JSON from the request body.
-     * @Valid triggers validation annotations in CreateUserDTO.
      */
     @PostMapping
     public ApiResponse<UserVO> createUser(@Valid @RequestBody CreateUserDTO createUserDTO) {
@@ -67,7 +66,6 @@ public class UserController {
      * Update user.
      *
      * Request: PUT /api/users/{id}
-     * @PathVariable reads the id from the URL path.
      */
     @PutMapping("/{id}")
     public ApiResponse<UserVO> updateUser(
@@ -81,5 +79,21 @@ public class UserController {
         }
 
         return ApiResponse.success(user);
+    }
+
+    /**
+     * Delete user.
+     *
+     * Request: DELETE /api/users/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteUser(@PathVariable Long id) {
+        boolean deleted = userService.deleteUser(id);
+
+        if (!deleted) {
+            return ApiResponse.error(404, "用户不存在");
+        }
+
+        return ApiResponse.success(null);
     }
 }

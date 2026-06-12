@@ -120,10 +120,7 @@ h2 {
   background: #ffffff;
 }
 
-.status-panel {
-  margin-bottom: 20px;
-}
-
+.status-panel,
 .form-panel {
   margin-bottom: 20px;
 }
@@ -159,6 +156,7 @@ h2 {
   font-weight: 700;
 }
 
+/* 用户表单：把账号、昵称、角色、状态和提交按钮放在一行。 */
 .user-form {
   display: grid;
   grid-template-columns: repeat(4, minmax(120px, 1fr)) auto;
@@ -234,7 +232,7 @@ dd {
 
 table {
   width: 100%;
-  min-width: 720px;
+  min-width: 760px;
   border-collapse: collapse;
 }
 
@@ -278,6 +276,13 @@ td {
   background: #fee2e2;
 }
 
+/* 操作按钮放在同一行，编辑是普通操作，删除是危险操作。 */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .link-button {
   padding: 0;
   border: 0;
@@ -289,6 +294,24 @@ td {
 
 .link-button:hover {
   color: #1d4ed8;
+}
+
+.danger-link-button {
+  padding: 0;
+  border: 0;
+  color: #b91c1c;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.danger-link-button:hover {
+  color: #991b1b;
+}
+
+.danger-link-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* 手机屏幕下改成上下布局，避免左侧菜单挤压内容。 */

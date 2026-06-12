@@ -1,34 +1,37 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 
-// systemLoading controls the loading state for the backend health panel.
+// systemLoading 控制“后端连接状态”区域的加载状态。
 const systemLoading = ref(false)
 
-// systemError stores the error message when /api/system/hello fails.
+// systemError 保存 /api/system/hello 请求失败时的错误提示。
 const systemError = ref('')
 
-// backendInfo stores the data returned by /api/system/hello.
+// backendInfo 保存后端系统接口返回的数据。
 const backendInfo = ref(null)
 
-// userLoading controls the loading state for the user table.
+// userLoading 控制用户表格的加载状态。
 const userLoading = ref(false)
 
-// userError stores the error message for user list/create/update requests.
+// userError 保存用户列表、新增、编辑、删除接口的错误提示。
 const userError = ref('')
 
-// users stores the user array returned by the backend.
+// users 保存后端 /api/users 返回的用户数组。
 const users = ref([])
 
-// saveLoading controls the submit button state when creating or updating.
+// saveLoading 控制新增或编辑用户时的提交按钮状态。
 const saveLoading = ref(false)
 
-// saveMessage gives quick feedback after a user is saved.
+// saveMessage 保存新增、编辑、删除成功后的提示。
 const saveMessage = ref('')
 
-// editingUserId is null in create mode, and has a user ID in edit mode.
+// deleteLoadingId 保存正在删除的用户 ID，用来禁用当前行的删除按钮。
+const deleteLoadingId = ref(null)
+
+// editingUserId 为 null 表示新增模式，有值表示正在编辑某个用户。
 const editingUserId = ref(null)
 
-// userForm is the form data sent to POST /api/users or PUT /api/users/{id}.
+// userForm 是表单数据，会被提交给 POST /api/users 或 PUT /api/users/{id}。
 const userForm = reactive({
   username: '',
   nickname: '',
@@ -36,11 +39,11 @@ const userForm = reactive({
   status: 'enabled'
 })
 
-// A computed value keeps template text simple and avoids duplicated conditions.
+// computed 会根据 editingUserId 自动计算当前是否处于编辑模式。
 const isEditing = computed(() => editingUserId.value !== null)
 
 /**
- * Load backend health information.
+ * 请求后端健康检查接口，用来确认前后端是否已经连通。
  */
 async function loadBackendInfo() {
   systemLoading.value = true
@@ -63,7 +66,7 @@ async function loadBackendInfo() {
 }
 
 /**
- * Load the user list from the backend.
+ * 请求用户列表接口，把后端返回的用户数组展示到表格里。
  */
 async function loadUsers() {
   userLoading.value = true
@@ -86,10 +89,10 @@ async function loadUsers() {
 }
 
 /**
- * Submit the form.
+ * 提交用户表单。
  *
- * Create mode uses POST /api/users.
- * Edit mode uses PUT /api/users/{id}.
+ * 新增模式：POST /api/users
+ * 编辑模式：PUT /api/users/{id}
  */
 async function saveUser() {
   saveLoading.value = true
@@ -127,7 +130,46 @@ async function saveUser() {
 }
 
 /**
- * Fill the form with table row data and switch to edit mode.
+ * 删除用户。
+ *
+ * 这里使用 DELETE /api/users/{id}，id 来自表格当前行。
+ */
+async function deleteUser(user) {
+  const confirmed = window.confirm(`确定删除用户「${user.nickname}」吗？`)
+
+  if (!confirmed) {
+    return
+  }
+
+  deleteLoadingId.value = user.id
+  saveMessage.value = ''
+  userError.value = ''
+
+  try {
+    const response = await fetch(`/api/users/${user.id}`, {
+      method: 'DELETE'
+    })
+    const result = await response.json()
+
+    if (result.code === 200) {
+      if (editingUserId.value === user.id) {
+        resetForm()
+      }
+
+      saveMessage.value = `已删除用户：${user.nickname}`
+      await loadUsers()
+    } else {
+      userError.value = result.message || '删除用户失败'
+    }
+  } catch (error) {
+    userError.value = '删除用户请求失败，请确认 Java 后端已经启动'
+  } finally {
+    deleteLoadingId.value = null
+  }
+}
+
+/**
+ * 点击表格“编辑”按钮时，把当前行数据填回表单。
  */
 function startEdit(user) {
   editingUserId.value = user.id
@@ -140,7 +182,7 @@ function startEdit(user) {
 }
 
 /**
- * Reset the form to create mode.
+ * 重置表单，让页面回到新增用户模式。
  */
 function resetForm() {
   editingUserId.value = null
@@ -151,7 +193,7 @@ function resetForm() {
 }
 
 /**
- * Refresh all page data at the same time.
+ * 同时刷新系统状态和用户列表。
  */
 function refreshPageData() {
   Promise.all([loadBackendInfo(), loadUsers()])
@@ -176,8 +218,8 @@ onMounted(() => {
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Step 5</p>
-          <h1>编辑用户接口</h1>
+          <p class="eyebrow">Step 6</p>
+          <h1>删除用户接口</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
           重新请求
@@ -261,7 +303,7 @@ onMounted(() => {
       <section class="panel table-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">GET / POST / PUT</p>
+            <p class="eyebrow">GET / POST / PUT / DELETE</p>
             <h2>用户管理</h2>
           </div>
           <button class="secondary-button" type="button" @click="loadUsers">
@@ -299,9 +341,19 @@ onMounted(() => {
                   </span>
                 </td>
                 <td>
-                  <button class="link-button" type="button" @click="startEdit(user)">
-                    编辑
-                  </button>
+                  <div class="action-buttons">
+                    <button class="link-button" type="button" @click="startEdit(user)">
+                      编辑
+                    </button>
+                    <button
+                      class="danger-link-button"
+                      type="button"
+                      :disabled="deleteLoadingId === user.id"
+                      @click="deleteUser(user)"
+                    >
+                      {{ deleteLoadingId === user.id ? '删除中...' : '删除' }}
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>

@@ -6,8 +6,8 @@
 
 ```text
 full-stack-project
-├─ backend   后端 Java Spring Boot 项目
-└─ frontend  前端 Vue + Vite 项目
+├── backend   后端 Java Spring Boot 项目
+└── frontend  前端 Vue + Vite 项目
 ```
 
 ## 当前进度
@@ -93,7 +93,7 @@ backend/src/main/java/com/example/admin/user/service/UserService.java
 - `DTO`：Data Transfer Object，用来接收前端传给后端的请求参数。
 - `VO`：View Object，用来控制后端返回给前端的数据结构。
 - `@RequestBody`：告诉 Spring Boot 从请求体 JSON 里读取参数，并转换成 Java 对象。
-- `POST`：通常用于新增数据；`GET` 通常用于查询数据。
+- `POST`：通常用于新增数据，`GET` 通常用于查询数据。
 - 当前新增用户只保存在内存列表里，重启后端后会恢复初始数据；后续接数据库后才会真正持久化。
 
 ### 第 4 步：接口参数校验
@@ -115,7 +115,7 @@ frontend/src/App.vue
 
 - `spring-boot-starter-validation`：Spring Boot 的参数校验依赖。
 - `@Valid`：放在 Controller 参数上，触发 DTO 里的校验规则。
-- `@NotBlank`：字符串不能是 null、空字符串、纯空格。
+- `@NotBlank`：字符串不能是 `null`、空字符串、纯空格。
 - `@Size`：限制字符串长度。
 - `@Pattern`：用正则限制字段格式，比如状态只能是 `enabled` 或 `disabled`。
 - `@RestControllerAdvice`：全局处理 Controller 抛出的异常。
@@ -181,6 +181,40 @@ frontend/src/style.css
 - `@PathVariable`：从 URL 路径里读取变量，比如 `/api/users/1` 里的 `1`。
 - `UpdateUserDTO`：编辑用户时的请求参数对象。
 - 前端编辑模式：点击表格“编辑”后，把当前行数据填入表单，再提交 `PUT` 请求。
+
+### 第 6 步：删除用户接口
+
+目标：给用户列表增加“删除”能力，理解 REST 风格里的 `DELETE` 请求。
+
+接口：
+
+```text
+DELETE /api/users/{id}
+```
+
+请求示例：
+
+```text
+DELETE /api/users/1
+```
+
+本步骤修改：
+
+```text
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+frontend/src/App.vue
+frontend/src/style.css
+README.md
+```
+
+你需要理解：
+
+- `DELETE`：通常用于删除一条已有数据。
+- `@DeleteMapping("/{id}")`：声明一个删除接口，并从 URL 里接收用户 ID。
+- `Service` 里的 `deleteUser`：负责真正从内存列表中移除用户。
+- 前端删除流程：点击删除、弹出确认框、发送 `DELETE` 请求、成功后刷新列表。
+- 当前删除只影响内存数据，重启后端后会恢复初始用户；接数据库后才会真正持久化。
 
 ## 启动后端
 
