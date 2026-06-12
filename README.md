@@ -96,6 +96,43 @@ backend/src/main/java/com/example/admin/user/service/UserService.java
 - `POST`：通常用于新增数据；`GET` 通常用于查询数据。
 - 当前新增用户只保存在内存列表里，重启后端后会恢复初始数据；后续接数据库后才会真正持久化。
 
+### 第 4 步：接口参数校验
+
+目标：让后端拦住无效请求，比如账号为空、昵称为空、状态值不合法。
+
+本步骤新增或修改：
+
+```text
+backend/pom.xml
+backend/src/main/java/com/example/admin/common/ApiResponse.java
+backend/src/main/java/com/example/admin/common/GlobalExceptionHandler.java
+backend/src/main/java/com/example/admin/user/dto/CreateUserDTO.java
+backend/src/main/java/com/example/admin/user/controller/UserController.java
+frontend/src/App.vue
+```
+
+你需要理解：
+
+- `spring-boot-starter-validation`：Spring Boot 的参数校验依赖。
+- `@Valid`：放在 Controller 参数上，触发 DTO 里的校验规则。
+- `@NotBlank`：字符串不能是 null、空字符串、纯空格。
+- `@Size`：限制字符串长度。
+- `@Pattern`：用正则限制字段格式，比如状态只能是 `enabled` 或 `disabled`。
+- `@RestControllerAdvice`：全局处理 Controller 抛出的异常。
+- `@ExceptionHandler`：指定某类异常应该怎么处理。
+
+校验失败时，后端会返回统一结构：
+
+```json
+{
+  "code": 400,
+  "message": "账号不能为空",
+  "data": null
+}
+```
+
+这一点很重要：前端校验只是提升体验，后端校验才是真正的兜底。
+
 ## 启动后端
 
 进入后端目录：

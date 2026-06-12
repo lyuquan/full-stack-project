@@ -25,7 +25,7 @@ const createLoading = ref(false)
 // createMessage gives quick feedback after a user is created.
 const createMessage = ref('')
 
-// userForm is the form data that will be sent to POST /api/users.
+// userForm is the form data sent to POST /api/users.
 const userForm = reactive({
   username: '',
   nickname: '',
@@ -35,8 +35,6 @@ const userForm = reactive({
 
 /**
  * Load backend health information.
- *
- * This request verifies that the frontend can reach the Java backend.
  */
 async function loadBackendInfo() {
   systemLoading.value = true
@@ -60,8 +58,6 @@ async function loadBackendInfo() {
 
 /**
  * Load the user list from the backend.
- *
- * Vite proxy forwards /api/users to http://localhost:8080/api/users.
  */
 async function loadUsers() {
   userLoading.value = true
@@ -84,9 +80,10 @@ async function loadUsers() {
 }
 
 /**
- * Create a new user by submitting form data to POST /api/users.
+ * Create a new user.
  *
- * The backend uses @RequestBody CreateUserDTO to receive this JSON body.
+ * The backend validates the JSON body with @Valid and CreateUserDTO rules.
+ * If validation fails, the backend returns code 400 and a readable message.
  */
 async function createUser() {
   createLoading.value = true
@@ -105,8 +102,6 @@ async function createUser() {
 
     if (result.code === 200) {
       createMessage.value = `已新增用户：${result.data.nickname}`
-
-      // Clear only text inputs; keep role/status defaults for faster repeated entry.
       userForm.username = ''
       userForm.nickname = ''
 
@@ -128,7 +123,6 @@ function refreshPageData() {
   Promise.all([loadBackendInfo(), loadUsers()])
 }
 
-// Load initial data when the page is mounted.
 onMounted(() => {
   refreshPageData()
 })
@@ -148,8 +142,8 @@ onMounted(() => {
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Step 3</p>
-          <h1>新增用户接口</h1>
+          <p class="eyebrow">Step 4</p>
+          <h1>接口参数校验</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
           重新请求
@@ -177,7 +171,7 @@ onMounted(() => {
       <section class="panel form-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">POST /api/users</p>
+            <p class="eyebrow">POST /api/users + @Valid</p>
             <h2>新增用户</h2>
           </div>
         </div>
@@ -185,12 +179,12 @@ onMounted(() => {
         <form class="user-form" @submit.prevent="createUser">
           <label>
             <span>账号</span>
-            <input v-model="userForm.username" required placeholder="例如 zhangsan" />
+            <input v-model="userForm.username" placeholder="例如 zhangsan" />
           </label>
 
           <label>
             <span>昵称</span>
-            <input v-model="userForm.nickname" required placeholder="例如 张三" />
+            <input v-model="userForm.nickname" placeholder="例如 张三" />
           </label>
 
           <label>

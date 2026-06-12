@@ -10,38 +10,34 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
 import java.util.List;
 
 /**
- * 用户管理接口控制器。
+ * User management API controller.
  *
- * Controller 层负责接收前端请求，并把请求转交给 Service 层处理。
- * 它不直接关心数据怎么来，只负责把结果包装成统一接口格式返回给前端。
+ * Controller receives frontend requests and delegates business work to Service.
  */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     /**
-     * 用户业务服务。
-     * Spring 会根据 @Service 自动创建 UserService 对象，并通过构造方法传进来。
+     * User business service injected by Spring.
      */
     private final UserService userService;
 
     /**
-     * 构造方法注入。
-     *
-     * 这是 Spring 推荐的依赖注入方式：需要什么依赖，就通过构造方法声明出来。
+     * Constructor injection makes required dependencies explicit.
      */
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
     /**
-     * 查询用户列表接口。
+     * Query user list.
      *
-     * 请求地址：GET /api/users
-     * 返回数据：统一响应对象，data 里面是用户 VO 列表。
+     * Request: GET /api/users
      */
     @GetMapping
     public ApiResponse<List<UserVO>> listUsers() {
@@ -51,13 +47,14 @@ public class UserController {
     }
 
     /**
-     * 新增用户接口。
+     * Create user.
      *
-     * 请求地址：POST /api/users
-     * @RequestBody 表示从请求体 JSON 里读取参数，并转换成 CreateUserDTO 对象。
+     * Request: POST /api/users
+     * @RequestBody reads JSON from the request body.
+     * @Valid triggers validation annotations in CreateUserDTO.
      */
     @PostMapping
-    public ApiResponse<UserVO> createUser(@RequestBody CreateUserDTO createUserDTO) {
+    public ApiResponse<UserVO> createUser(@Valid @RequestBody CreateUserDTO createUserDTO) {
         UserVO user = userService.createUser(createUserDTO);
 
         return ApiResponse.success(user);

@@ -1,35 +1,47 @@
 package com.example.admin.user.dto;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+
 /**
- * 新增用户请求参数对象。
+ * Request body for creating a user.
  *
- * DTO 是 Data Transfer Object 的缩写，意思是“数据传输对象”。
- * 前端提交 JSON 到后端时，后端会用 DTO 接收这些请求参数。
+ * DTO means Data Transfer Object. The frontend sends JSON, and Spring Boot
+ * converts that JSON into this Java object.
  */
 public class CreateUserDTO {
 
     /**
-     * 登录账号。
-     * 前端 JSON 里的 username 会自动映射到这个字段。
+     * Login username.
+     *
+     * @NotBlank means the value cannot be null, empty, or only spaces.
+     * @Size limits the length so the backend does not accept unreasonable input.
      */
+    @NotBlank(message = "账号不能为空")
+    @Size(max = 30, message = "账号不能超过30个字符")
     private String username;
 
     /**
-     * 用户昵称。
-     * 前端 JSON 里的 nickname 会自动映射到这个字段。
+     * Display name.
      */
+    @NotBlank(message = "昵称不能为空")
+    @Size(max = 30, message = "昵称不能超过30个字符")
     private String nickname;
 
     /**
-     * 用户角色。
-     * 前端 JSON 里的 role 会自动映射到这个字段。
+     * Role name.
      */
+    @NotBlank(message = "角色不能为空")
     private String role;
 
     /**
-     * 用户状态。
-     * 前端 JSON 里的 status 会自动映射到这个字段。
+     * User status.
+     *
+     * @Pattern restricts status to enabled or disabled.
      */
+    @NotBlank(message = "状态不能为空")
+    @Pattern(regexp = "enabled|disabled", message = "状态只能是 enabled 或 disabled")
     private String status;
 
     public String getUsername() {

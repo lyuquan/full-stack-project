@@ -39,6 +39,15 @@
         </dependency>
 
         <!--
+            Validation starter:
+            Provides @Valid, @NotBlank, @Size and other request parameter validation features.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!--
             测试启动器：
             后续写单元测试、接口测试会用到；现在先放进来，养成项目自带测试依赖的习惯。
         -->
