@@ -701,6 +701,46 @@ README.md
 - `getStatusLabel(status)`：前端根据接口返回的选项，把状态值转换成显示文案。
 - `/api/users/statuses` 也要写在 `/api/users/{id}` 前面，避免 `statuses` 被当成用户 ID。
 
+### 第 19 步：后端常量集中管理
+
+目标：把用户模块里的角色值、状态值、校验正则和状态显示文案集中到一个常量类里。
+
+为什么要做这一步：
+
+- 之前 `超级管理员`、`运营管理员`、`enabled`、`disabled` 这些字符串分散在 DTO、Service 和选项接口里。
+- 字符串重复越多，以后修改时越容易漏改，导致校验、统计和下拉选项不一致。
+- 常量类可以让这些固定业务值有一个统一来源，后续改动更安全。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/user/constant/UserConstants.java
+backend/src/main/java/com/example/admin/user/dto/CreateUserDTO.java
+backend/src/main/java/com/example/admin/user/dto/UpdateUserDTO.java
+backend/src/main/java/com/example/admin/user/dto/UpdateUserStatusDTO.java
+backend/src/main/java/com/example/admin/user/config/UserDataInitializer.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+README.md
+```
+
+每个文件的作用：
+
+- `UserConstants.java`：集中定义用户模块用到的固定角色、固定状态、校验正则和状态显示文案。
+- `CreateUserDTO.java`：角色和状态校验正则改成引用 `UserConstants`。
+- `UpdateUserDTO.java`：编辑用户时的角色和状态校验也引用同一份常量。
+- `UpdateUserStatusDTO.java`：启用/禁用接口的状态校验引用同一份状态正则。
+- `UserDataInitializer.java`：演示用户的初始角色和初始状态改成引用常量。
+- `UserService.java`：统计查询和选项接口不再手写字符串，而是引用常量。
+- `README.md`：记录第 19 步的学习目标、原因和文件职责。
+
+你需要理解：
+
+- `public static final`：Java 常量写法，表示这个值属于类本身，并且不可修改。
+- `final class`：表示这个常量类不应该被继承。
+- `private UserConstants()`：禁止别人 new 一个常量类对象，因为常量类只用类名访问。
+- 注解里的 `regexp` 必须是编译期常量，所以 `UserConstants.ROLE_PATTERN` 可以用在 `@Pattern` 里。
+- 常量集中管理不是新功能，而是为了降低后续维护成本。
+
 ## 启动后端
 
 进入后端目录：

@@ -2,6 +2,7 @@ package com.example.admin.user.service;
 
 import com.example.admin.common.PageResult;
 import com.example.admin.common.BusinessException;
+import com.example.admin.user.constant.UserConstants;
 import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
 import com.example.admin.user.entity.UserEntity;
@@ -92,11 +93,11 @@ public class UserService {
      */
     public UserStatsVO getUserStats() {
         long totalCount = userRepository.count();
-        long enabledCount = userRepository.countByStatus("enabled");
-        long disabledCount = userRepository.countByStatus("disabled");
-        long superAdminCount = userRepository.countByRole("超级管理员");
-        long operatorCount = userRepository.countByRole("运营管理员");
-        long readonlyCount = userRepository.countByRole("只读用户");
+        long enabledCount = userRepository.countByStatus(UserConstants.STATUS_ENABLED);
+        long disabledCount = userRepository.countByStatus(UserConstants.STATUS_DISABLED);
+        long superAdminCount = userRepository.countByRole(UserConstants.ROLE_SUPER_ADMIN);
+        long operatorCount = userRepository.countByRole(UserConstants.ROLE_OPERATOR);
+        long readonlyCount = userRepository.countByRole(UserConstants.ROLE_READONLY);
 
         return new UserStatsVO(
                 totalCount,
@@ -116,9 +117,9 @@ public class UserService {
      */
     public List<OptionVO> listRoleOptions() {
         List<OptionVO> roles = new ArrayList<OptionVO>();
-        roles.add(new OptionVO("超级管理员", "超级管理员"));
-        roles.add(new OptionVO("运营管理员", "运营管理员"));
-        roles.add(new OptionVO("只读用户", "只读用户"));
+        roles.add(new OptionVO(UserConstants.ROLE_SUPER_ADMIN, UserConstants.ROLE_SUPER_ADMIN));
+        roles.add(new OptionVO(UserConstants.ROLE_OPERATOR, UserConstants.ROLE_OPERATOR));
+        roles.add(new OptionVO(UserConstants.ROLE_READONLY, UserConstants.ROLE_READONLY));
 
         return roles;
     }
@@ -130,8 +131,8 @@ public class UserService {
      */
     public List<OptionVO> listStatusOptions() {
         List<OptionVO> statuses = new ArrayList<OptionVO>();
-        statuses.add(new OptionVO("enabled", "启用"));
-        statuses.add(new OptionVO("disabled", "禁用"));
+        statuses.add(new OptionVO(UserConstants.STATUS_ENABLED, UserConstants.STATUS_ENABLED_LABEL));
+        statuses.add(new OptionVO(UserConstants.STATUS_DISABLED, UserConstants.STATUS_DISABLED_LABEL));
 
         return statuses;
     }

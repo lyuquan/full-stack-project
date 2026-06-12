@@ -1,5 +1,7 @@
 package com.example.admin.user.dto;
 
+import com.example.admin.user.constant.UserConstants;
+
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -33,14 +35,14 @@ public class UpdateUserDTO {
      * This prevents API clients from editing a user into an unsupported role.
      */
     @NotBlank(message = "角色不能为空")
-    @Pattern(regexp = "超级管理员|运营管理员|只读用户", message = "角色只能是 超级管理员、运营管理员 或 只读用户")
+    @Pattern(regexp = UserConstants.ROLE_PATTERN, message = "角色只能是 超级管理员、运营管理员 或 只读用户")
     private String role;
 
     /**
      * User status.
      */
     @NotBlank(message = "状态不能为空")
-    @Pattern(regexp = "enabled|disabled", message = "状态只能是 enabled 或 disabled")
+    @Pattern(regexp = UserConstants.STATUS_PATTERN, message = "状态只能是 enabled 或 disabled")
     private String status;
 
     public String getUsername() {

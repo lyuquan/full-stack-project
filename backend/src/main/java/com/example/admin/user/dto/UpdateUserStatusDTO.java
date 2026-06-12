@@ -1,5 +1,7 @@
 package com.example.admin.user.dto;
 
+import com.example.admin.user.constant.UserConstants;
+
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 
@@ -18,7 +20,7 @@ public class UpdateUserStatusDTO {
      * blocked by backend validation.
      */
     @NotBlank(message = "状态不能为空")
-    @Pattern(regexp = "enabled|disabled", message = "状态只能是 enabled 或 disabled")
+    @Pattern(regexp = UserConstants.STATUS_PATTERN, message = "状态只能是 enabled 或 disabled")
     private String status;
 
     public String getStatus() {

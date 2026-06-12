@@ -1,5 +1,6 @@
 package com.example.admin.user.config;
 
+import com.example.admin.user.constant.UserConstants;
 import com.example.admin.user.entity.UserEntity;
 import com.example.admin.user.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -34,9 +35,9 @@ public class UserDataInitializer implements CommandLineRunner {
         }
 
         userRepository.saveAll(Arrays.asList(
-                createUser("admin", "系统管理员", "超级管理员", "enabled"),
-                createUser("manager", "运营经理", "运营管理员", "enabled"),
-                createUser("auditor", "审计专员", "只读用户", "disabled")
+                createUser("admin", "系统管理员", UserConstants.ROLE_SUPER_ADMIN, UserConstants.STATUS_ENABLED),
+                createUser("manager", "运营经理", UserConstants.ROLE_OPERATOR, UserConstants.STATUS_ENABLED),
+                createUser("auditor", "审计专员", UserConstants.ROLE_READONLY, UserConstants.STATUS_DISABLED)
         ));
     }
 
