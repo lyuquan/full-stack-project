@@ -12,13 +12,52 @@ export class ApiError extends Error {
 }
 
 /**
+ * 保存登录用户的 localStorage key。
+ *
+ * App.vue 负责写入，api.js 负责读取，这样后续请求可以自动带上 token。
+ */
+const LOGIN_STORAGE_KEY = 'admin-study-login-user'
+
+/**
+ * 从 localStorage 读取登录 token。
+ *
+ * 如果本地数据格式不对，就返回空字符串，让页面继续按未登录处理。
+ */
+function getStoredToken() {
+  const savedUser = localStorage.getItem(LOGIN_STORAGE_KEY)
+
+  if (!savedUser) {
+    return ''
+  }
+
+  try {
+    const user = JSON.parse(savedUser)
+    return user.token || ''
+  } catch (error) {
+    return ''
+  }
+}
+
+/**
  * Send a request and unwrap the common ApiResponse structure.
  *
  * Backend responses all look like { code, message, data }, so this helper
  * keeps App.vue from repeating response.json() and result.code checks.
  */
 async function apiRequest(url, options = {}) {
-  const response = await fetch(url, options)
+  const token = getStoredToken()
+  const headers = {
+    ...(options.headers || {})
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers
+  })
   const result = await response.json()
 
   if (result.code !== 200) {

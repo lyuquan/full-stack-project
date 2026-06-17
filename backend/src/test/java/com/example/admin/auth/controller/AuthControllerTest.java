@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -42,7 +43,8 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data.username", is("admin")))
-                .andExpect(jsonPath("$.data.role", is("超级管理员")));
+                .andExpect(jsonPath("$.data.role", is("超级管理员")))
+                .andExpect(jsonPath("$.data.token", startsWith("study-token-")));
     }
 
     /**

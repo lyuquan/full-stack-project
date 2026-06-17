@@ -27,14 +27,22 @@ public class LoginVO {
      */
     private String role;
 
+    /**
+     * 登录成功后返回给前端的学习版 token。
+     *
+     * 前端会保存这个值，用来刷新页面后恢复登录状态。
+     */
+    private String token;
+
     public LoginVO() {
     }
 
-    public LoginVO(Long id, String username, String nickname, String role) {
+    public LoginVO(Long id, String username, String nickname, String role, String token) {
         this.id = id;
         this.username = username;
         this.nickname = nickname;
         this.role = role;
+        this.token = token;
     }
 
     public Long getId() {
@@ -67,5 +75,13 @@ public class LoginVO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

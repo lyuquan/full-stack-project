@@ -8,6 +8,7 @@ import com.example.admin.user.entity.UserEntity;
 import com.example.admin.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
 import java.util.Optional;
 
 /**
@@ -55,7 +56,18 @@ public class AuthService {
                 user.getId(),
                 user.getUsername(),
                 user.getNickname(),
-                user.getRole()
+                user.getRole(),
+                createLearningToken(user)
         );
+    }
+
+    /**
+     * 生成学习版 token。
+     *
+     * 这个 token 只用来帮助理解登录流程。真实项目通常会使用 JWT
+     * 这种带签名的 token，或者使用服务端 session 保存登录状态。
+     */
+    private String createLearningToken(UserEntity user) {
+        return "study-token-" + user.getId() + "-" + UUID.randomUUID().toString();
     }
 }

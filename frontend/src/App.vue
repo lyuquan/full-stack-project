@@ -11,6 +11,9 @@ const loginError = ref('')
 // currentUser stores the user information returned after login.
 const currentUser = ref(null)
 
+// LOGIN_STORAGE_KEY 是保存登录用户的 localStorage key，刷新页面后还能找回登录状态。
+const LOGIN_STORAGE_KEY = 'admin-study-login-user'
+
 // systemLoading 控制“后端连接状态”区域的加载状态。
 const systemLoading = ref(false)
 
@@ -330,8 +333,9 @@ async function login() {
 
   try {
     currentUser.value = await apiPost('/api/auth/login', loginForm)
+    saveLoginUser(currentUser.value)
   } catch (error) {
-    loginError.value = getApiErrorMessage(error, '?????????? Java ??????')
+    loginError.value = getApiErrorMessage(error, '登录请求失败，请确认 Java 后端已经启动')
   } finally {
     loginLoading.value = false
   }
@@ -346,6 +350,33 @@ async function login() {
 function logout() {
   currentUser.value = null
   loginError.value = ''
+  localStorage.removeItem(LOGIN_STORAGE_KEY)
+}
+
+/**
+ * 把登录用户保存到 localStorage。
+ *
+ * localStorage 里的数据刷新页面后还在，所以可以用它恢复登录状态。
+ */
+function saveLoginUser(user) {
+  localStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify(user))
+}
+
+/**
+ * 页面打开时从 localStorage 恢复登录用户。
+ */
+function restoreLoginUser() {
+  const savedUser = localStorage.getItem(LOGIN_STORAGE_KEY)
+
+  if (!savedUser) {
+    return
+  }
+
+  try {
+    currentUser.value = JSON.parse(savedUser)
+  } catch (error) {
+    localStorage.removeItem(LOGIN_STORAGE_KEY)
+  }
 }
 
 /**
@@ -511,6 +542,7 @@ function refreshPageData() {
 }
 
 onMounted(() => {
+  restoreLoginUser()
   refreshPageData()
 })
 </script>
@@ -541,7 +573,7 @@ onMounted(() => {
         <div class="panel-header">
           <div>
             <p class="eyebrow">POST /api/auth/login</p>
-            <h2>????</h2>
+            <h2>登录后台</h2>
           </div>
           <button
             v-if="currentUser"
@@ -549,23 +581,23 @@ onMounted(() => {
             type="button"
             @click="logout"
           >
-            ????
+            退出登录
           </button>
         </div>
 
         <form v-if="!currentUser" class="login-form" @submit.prevent="login">
           <label>
-            <span>??</span>
+            <span>账号</span>
             <input v-model="loginForm.username" autocomplete="username" />
           </label>
 
           <label>
-            <span>??</span>
+            <span>密码</span>
             <input v-model="loginForm.password" type="password" autocomplete="current-password" />
           </label>
 
           <button class="submit-button" type="submit" :disabled="loginLoading">
-            {{ loginLoading ? '???...' : '??' }}
+            {{ loginLoading ? '登录中...' : '登录' }}
           </button>
         </form>
 
@@ -574,7 +606,7 @@ onMounted(() => {
         </p>
 
         <p v-if="currentUser" class="status success">
-          ?????{{ currentUser.nickname }} / {{ currentUser.role }}
+          当前登录：{{ currentUser.nickname }} / {{ currentUser.role }}
         </p>
       </section>
 

@@ -937,6 +937,48 @@ README.md
 
 注意：这一步为了学习流程，密码暂时是明文 `123456`。真实项目不能明文保存密码，后面会继续学习密码加密和 token 登录。
 
+### 第 23 步：保存登录状态和学习版 token
+
+目标：登录成功后让后端返回一个学习版 `token`，前端把登录用户和 token 保存到 `localStorage`，刷新页面后仍然能恢复当前登录用户。
+
+为什么要做这一步：
+
+- 第 22 步登录成功后，用户信息只存在内存变量 `currentUser` 里，刷新页面就会丢失。
+- 后台管理系统通常需要一个登录凭证，后续请求可以带着这个凭证告诉后端“我已经登录”。
+- 这一步先学习 token 和本地保存登录态的基本形状，下一步再继续学习接口拦截和权限校验。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/vo/LoginVO.java
+backend/src/main/java/com/example/admin/auth/service/AuthService.java
+backend/src/test/java/com/example/admin/auth/controller/AuthControllerTest.java
+frontend/src/App.vue
+frontend/src/api.js
+README.md
+```
+
+每个文件的作用：
+
+- `LoginVO.java`：新增 `token` 字段，登录成功后返回给前端。
+- `AuthService.java`：新增 `createLearningToken`，生成 `study-token-用户ID-随机字符串`。
+- `AuthControllerTest.java`：补充断言，确认登录成功会返回 `study-token-` 开头的 token。
+- `App.vue`：登录成功后保存用户信息，页面打开时从 `localStorage` 恢复登录用户，退出时清除登录信息。
+- `api.js`：请求时自动从 `localStorage` 读取 token，并放到 `Authorization` 请求头里。
+- `README.md`：记录第 23 步的学习目标和代码含义。
+
+你需要理解：
+
+- `token`：登录成功后后端返回给前端的一段凭证字符串。
+- `UUID.randomUUID()`：Java 生成随机字符串的工具，这里用来让每次登录的 token 不一样。
+- `localStorage`：浏览器本地存储，刷新页面后数据还在。
+- `JSON.stringify(user)`：把 JavaScript 对象转成字符串，才能保存到 `localStorage`。
+- `JSON.parse(savedUser)`：把 `localStorage` 里保存的字符串恢复成对象。
+- `Authorization`：常见的请求头，用来携带登录凭证。
+- `Bearer ${token}`：token 请求头的常见格式，意思是“这是一个 bearer token”。
+
+注意：这一步的 token 仍然是学习版。后端目前只是返回 token，前端也会携带 token，但还没有真正校验 token。真实项目通常会使用 JWT 或服务端 session，并且每个需要登录的接口都要校验权限。
+
 ## 启动后端
 
 进入后端目录：
