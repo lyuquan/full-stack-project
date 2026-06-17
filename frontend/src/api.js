@@ -39,6 +39,15 @@ function getStoredToken() {
 }
 
 /**
+ * 清理浏览器里保存的登录用户。
+ *
+ * 后端退出登录成功后，前端也要删除 localStorage，避免继续携带旧 token。
+ */
+export function clearStoredLoginUser() {
+  localStorage.removeItem(LOGIN_STORAGE_KEY)
+}
+
+/**
  * Send a request and unwrap the common ApiResponse structure.
  *
  * Backend responses all look like { code, message, data }, so this helper

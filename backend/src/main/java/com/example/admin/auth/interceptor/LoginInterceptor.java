@@ -21,16 +21,6 @@ import java.nio.charset.StandardCharsets;
 public class LoginInterceptor implements HandlerInterceptor {
 
     /**
-     * Authorization 是 HTTP 里常用来放登录凭证的请求头名称。
-     */
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-
-    /**
-     * Bearer 是 token 请求头的常见格式前缀。
-     */
-    private static final String BEARER_PREFIX = "Bearer ";
-
-    /**
      * 学习版 token 服务，用来判断 token 是否由后端登录接口签发过。
      */
     private final AuthTokenService authTokenService;
@@ -53,7 +43,7 @@ public class LoginInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String token = getToken(request);
+        String token = authTokenService.getToken(request);
 
         if (token != null && authTokenService.isValid(token)) {
             return true;
@@ -65,20 +55,5 @@ public class LoginInterceptor implements HandlerInterceptor {
         response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.error(401, "请先登录")));
 
         return false;
-    }
-
-    /**
-     * 从 Authorization 请求头里取出真正的 token。
-     *
-     * 前端发送的是 "Bearer xxxxx"，后端真正要校验的是 xxxxx 这一段。
-     */
-    private String getToken(HttpServletRequest request) {
-        String authorization = request.getHeader(AUTHORIZATION_HEADER);
-
-        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
-            return null;
-        }
-
-        return authorization.substring(BEARER_PREFIX.length());
     }
 }

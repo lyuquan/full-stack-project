@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './api'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, clearStoredLoginUser } from './api'
 
 // loginLoading controls the login button loading state.
 const loginLoading = ref(false)
@@ -348,11 +348,15 @@ async function login() {
  * This learning step only stores login state in memory. Refreshing the browser
  * will clear it, and later we will learn token/localStorage persistence.
  */
-function logout() {
-  currentUser.value = null
-  loginError.value = ''
-  localStorage.removeItem(LOGIN_STORAGE_KEY)
-  clearProtectedData()
+async function logout() {
+  try {
+    await apiPost('/api/auth/logout')
+  } finally {
+    currentUser.value = null
+    loginError.value = ''
+    clearStoredLoginUser()
+    clearProtectedData()
+  }
 }
 
 /**

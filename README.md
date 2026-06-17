@@ -1101,6 +1101,50 @@ README.md
 
 注意：这仍然不是最终生产方案。因为 token 存在内存里，后端重启后 token 会全部丢失，多台服务器之间也不能共享。真实项目常见方案是 JWT、Redis token/session，或者完整的 Spring Security 认证授权体系。
 
+### 第 27 步：当前用户接口和退出登录接口
+
+目标：补全登录闭环。新增 `GET /api/auth/me` 查询当前登录用户，新增 `POST /api/auth/logout` 让后端删除当前 token，退出后旧 token 不能再访问受保护接口。
+
+为什么要做这一步：
+
+- 登录成功只是拿到 token，不代表登录流程完整。
+- 后台系统通常需要一个“当前登录用户”接口，用来刷新页面后确认 token 仍然有效。
+- 退出登录不能只清理前端 `localStorage`，后端也应该让这个 token 失效。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/service/AuthTokenService.java
+backend/src/main/java/com/example/admin/auth/controller/AuthController.java
+backend/src/main/java/com/example/admin/auth/interceptor/LoginInterceptor.java
+backend/src/main/java/com/example/admin/config/WebConfig.java
+backend/src/test/java/com/example/admin/auth/controller/AuthControllerTest.java
+frontend/src/api.js
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `AuthTokenService.java`：新增从请求头读取 token、根据请求查询登录用户、删除当前 token 的方法。
+- `AuthController.java`：新增 `GET /api/auth/me` 和 `POST /api/auth/logout`。
+- `LoginInterceptor.java`：复用 `AuthTokenService.getToken(request)`，避免重复解析 `Bearer token`。
+- `WebConfig.java`：把 `/api/auth/me` 和 `/api/auth/logout` 加入登录拦截器保护范围。
+- `AuthControllerTest.java`：新增当前用户接口测试和退出登录后 token 失效测试。
+- `api.js`：新增 `clearStoredLoginUser()`，统一清理前端登录缓存。
+- `App.vue`：退出登录时先请求后端 `/api/auth/logout`，再清理前端登录状态和用户数据。
+- `README.md`：记录第 27 步的学习目标和代码含义。
+
+你需要理解：
+
+- `GET /api/auth/me`：查询当前 token 对应的登录用户。
+- `POST /api/auth/logout`：删除当前请求里的 token，让它失效。
+- `authTokenService.removeToken(request)`：从请求头取出 token，并从服务端 token 仓库删除。
+- `clearStoredLoginUser()`：前端清理 `localStorage` 的统一方法。
+- 退出登录要前后端都做：后端让 token 失效，前端清理本地保存的用户信息。
+
+注意：当前 `/me` 和 `/logout` 已经被登录拦截器保护。没有 token 或 token 已失效时，请求会直接返回 `401 请先登录`。
+
 ## 启动后端
 
 进入后端目录：

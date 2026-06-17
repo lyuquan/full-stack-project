@@ -25,13 +25,19 @@ public class WebConfig implements WebMvcConfigurer {
     /**
      * 注册拦截器规则。
      *
-     * addPathPatterns("/api/users", "/api/users/**") 表示 /api/users 本身和它下面的接口都需要先检查登录。
+     * /api/users 和 /api/users/** 是用户管理接口，需要登录。
+     * /api/auth/me 用来查询当前登录用户，也需要登录。
+     * /api/auth/logout 用来退出登录，也需要登录。
      * /api/auth/login 没有放进来，所以登录接口本身不会被拦截。
-     * /api/system/hello 也没有放进来，所以它仍然可以用来测试后端是否启动。
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/api/users", "/api/users/**");
+                .addPathPatterns(
+                        "/api/users",
+                        "/api/users/**",
+                        "/api/auth/me",
+                        "/api/auth/logout"
+                );
     }
 }
