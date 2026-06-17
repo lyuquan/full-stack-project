@@ -1,5 +1,6 @@
 package com.example.admin.auth.interceptor;
 
+import com.example.admin.auth.service.AuthTokenService;
 import com.example.admin.common.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;
@@ -13,8 +14,8 @@ import java.nio.charset.StandardCharsets;
 /**
  * 登录拦截器。
  *
- * 请求进入 Controller 之前，会先经过这里。这里先做学习版 token 校验：
- * 只要请求头 Authorization 的值以 "Bearer study-token-" 开头，就认为已经登录。
+ * 请求进入 Controller 之前，会先经过这里。
+ * 这里读取 Authorization 请求头，并检查 token 是否真的存在于后端的 token 仓库。
  */
 @Component
 public class LoginInterceptor implements HandlerInterceptor {
@@ -25,16 +26,22 @@ public class LoginInterceptor implements HandlerInterceptor {
     private static final String AUTHORIZATION_HEADER = "Authorization";
 
     /**
-     * Bearer 是 token 常见前缀，后面跟真正的 token 字符串。
+     * Bearer 是 token 请求头的常见格式前缀。
      */
-    private static final String LEARNING_TOKEN_PREFIX = "Bearer study-token-";
+    private static final String BEARER_PREFIX = "Bearer ";
+
+    /**
+     * 学习版 token 服务，用来判断 token 是否由后端登录接口签发过。
+     */
+    private final AuthTokenService authTokenService;
 
     /**
      * ObjectMapper 用来把 Java 对象转换成 JSON 字符串。
      */
     private final ObjectMapper objectMapper;
 
-    public LoginInterceptor(ObjectMapper objectMapper) {
+    public LoginInterceptor(AuthTokenService authTokenService, ObjectMapper objectMapper) {
+        this.authTokenService = authTokenService;
         this.objectMapper = objectMapper;
     }
 
@@ -46,9 +53,9 @@ public class LoginInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        String token = getToken(request);
 
-        if (authorization != null && authorization.startsWith(LEARNING_TOKEN_PREFIX)) {
+        if (token != null && authTokenService.isValid(token)) {
             return true;
         }
 
@@ -58,5 +65,20 @@ public class LoginInterceptor implements HandlerInterceptor {
         response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.error(401, "请先登录")));
 
         return false;
+    }
+
+    /**
+     * 从 Authorization 请求头里取出真正的 token。
+     *
+     * 前端发送的是 "Bearer xxxxx"，后端真正要校验的是 xxxxx 这一段。
+     */
+    private String getToken(HttpServletRequest request) {
+        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+
+        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
+            return null;
+        }
+
+        return authorization.substring(BEARER_PREFIX.length());
     }
 }

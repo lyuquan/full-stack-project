@@ -1062,6 +1062,45 @@ README.md
 
 注意：这一步只解决“密码不能明文保存”。当前 token 仍然是学习版，后面还会继续学习真实 JWT、权限角色和接口授权。
 
+### 第 26 步：服务端校验 token 是否真的登录过
+
+目标：把 token 从“只看格式”升级成“后端真的登记过才有效”。登录成功时，后端生成 token 并保存到内存 token 仓库；访问用户接口时，拦截器会检查这个 token 是否存在。
+
+为什么要做这一步：
+
+- 第 24 步的拦截器只判断 `Authorization` 是否以 `Bearer study-token-` 开头。
+- 这样别人随便伪造一个 `Bearer study-token-fake` 也能通过，安全性很弱。
+- 这一步让后端保存自己签发过的 token，请求带来的 token 必须能在服务端查到。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/service/AuthTokenService.java
+backend/src/main/java/com/example/admin/auth/service/AuthService.java
+backend/src/main/java/com/example/admin/auth/interceptor/LoginInterceptor.java
+backend/src/test/java/com/example/admin/user/controller/UserControllerTest.java
+README.md
+```
+
+每个文件的作用：
+
+- `AuthTokenService.java`：新增学习版 token 服务，用内存 `ConcurrentHashMap` 保存 token 和登录用户信息。
+- `AuthService.java`：登录成功时调用 `authTokenService.createToken(user)`，由 token 服务生成并登记 token。
+- `LoginInterceptor.java`：从 `Authorization` 请求头取出 token，并调用 `authTokenService.isValid(token)` 校验是否真的存在。
+- `UserControllerTest.java`：用户接口测试先登录拿真实 token；新增“伪造 token 不能访问”的测试。
+- `README.md`：记录第 26 步的学习目标和代码含义。
+
+你需要理解：
+
+- `ConcurrentHashMap`：线程安全的 Map，适合 Web 项目里多个请求同时读写。
+- `tokenStore`：服务端内存里的 token 仓库，key 是 token，value 是登录用户信息。
+- `createToken(user)`：登录成功后生成 token，并把 token 登记到服务端。
+- `isValid(token)`：判断 token 是否能在服务端查到。
+- `Authorization: Bearer xxx`：前端请求头的完整格式，后端会取出 `xxx` 这部分做校验。
+- 伪造 token：格式看起来对，但没有在服务端登记过，所以现在会返回 `401 请先登录`。
+
+注意：这仍然不是最终生产方案。因为 token 存在内存里，后端重启后 token 会全部丢失，多台服务器之间也不能共享。真实项目常见方案是 JWT、Redis token/session，或者完整的 Spring Security 认证授权体系。
+
 ## 启动后端
 
 进入后端目录：

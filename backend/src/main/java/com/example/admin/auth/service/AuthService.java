@@ -9,20 +9,18 @@ import com.example.admin.user.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
 import java.util.Optional;
 
 /**
- * Authentication business service.
+ * 登录认证业务服务。
  *
- * AuthService handles login-related business logic. The Controller only receives
- * requests, while this service decides whether the account can log in.
+ * Controller 只负责接收请求，真正的账号查询、密码校验、账号状态判断和 token 生成都放在这里。
  */
 @Service
 public class AuthService {
 
     /**
-     * UserRepository is used to find the user account from the database.
+     * 用户数据库访问对象，用来根据账号查询用户。
      */
     private final UserRepository userRepository;
 
@@ -31,16 +29,26 @@ public class AuthService {
      */
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    /**
+     * 学习版 token 服务，负责生成 token 并保存到服务端内存。
+     */
+    private final AuthTokenService authTokenService;
+
+    public AuthService(
+            UserRepository userRepository,
+            BCryptPasswordEncoder passwordEncoder,
+            AuthTokenService authTokenService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authTokenService = authTokenService;
     }
 
     /**
-     * Login with username and password.
+     * 登录方法。
      *
      * 前端传过来的是明文密码，数据库保存的是 BCrypt 密文。
-     * 所以这里不能再用 equals，而要用 passwordEncoder.matches 做安全校验。
+     * 校验通过后，后端生成 token 并返回给前端。
      */
     public LoginVO login(LoginDTO loginDTO) {
         Optional<UserEntity> optionalUser = userRepository.findByUsername(loginDTO.getUsername());
@@ -64,17 +72,7 @@ public class AuthService {
                 user.getUsername(),
                 user.getNickname(),
                 user.getRole(),
-                createLearningToken(user)
+                authTokenService.createToken(user)
         );
-    }
-
-    /**
-     * 生成学习版 token。
-     *
-     * 这个 token 只用来帮助理解登录流程。真实项目通常会使用 JWT
-     * 这种带签名的 token，或者使用服务端 session 保存登录状态。
-     */
-    private String createLearningToken(UserEntity user) {
-        return "study-token-" + user.getId() + "-" + UUID.randomUUID().toString();
     }
 }
