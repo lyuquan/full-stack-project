@@ -146,6 +146,7 @@ public class UserService {
         UserEntity entity = new UserEntity();
         entity.setUsername(createUserDTO.getUsername());
         entity.setNickname(createUserDTO.getNickname());
+        entity.setPassword("123456");
         entity.setRole(createUserDTO.getRole());
         entity.setStatus(createUserDTO.getStatus());
 

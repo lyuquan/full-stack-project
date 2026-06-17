@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 /**
  * User database access layer.
  *
@@ -30,6 +32,13 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
      * but cannot change it to another user's username.
      */
     boolean existsByUsernameAndIdNot(String username, Long id);
+
+    /**
+     * Query one user by username.
+     *
+     * Login uses this method to find the account before checking the password.
+     */
+    Optional<UserEntity> findByUsername(String username);
 
     /**
      * Count users by status.

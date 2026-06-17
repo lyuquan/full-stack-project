@@ -127,6 +127,7 @@ h2 {
 }
 
 .status-panel,
+.login-panel,
 .stats-panel,
 .detail-panel,
 .search-panel,
@@ -214,6 +215,35 @@ h2 {
 
 .search-form input,
 .search-form select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #172033;
+  background: #ffffff;
+}
+
+/* Login form: calls POST /api/auth/login and shows the current login user. */
+.login-form {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.login-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.login-form span {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.login-form input {
   width: 100%;
   height: 38px;
   padding: 0 10px;
@@ -435,6 +465,7 @@ td {
   }
 
   .user-form,
+  .login-form,
   .search-form,
   .stats-grid {
     grid-template-columns: 1fr;

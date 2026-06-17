@@ -42,6 +42,15 @@ public class UserEntity {
     private String nickname;
 
     /**
+     * Login password.
+     *
+     * This learning project stores a plain text password only to make the
+     * login flow easy to understand. Real projects must store encrypted hashes.
+     */
+    @Column(nullable = false, length = 100)
+    private String password;
+
+    /**
      * User role name.
      */
     @Column(nullable = false, length = 30)
@@ -109,6 +118,14 @@ public class UserEntity {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getRole() {

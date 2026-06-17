@@ -34,13 +34,15 @@ public class UserSchemaInitializer implements CommandLineRunner {
     public void run(String... args) {
         addTimestampColumnIfMissing("created_at");
         addTimestampColumnIfMissing("updated_at");
+        addVarcharColumnIfMissing("password", 100);
 
         /*
          * Old rows did not have create/update time values.
-         * After adding the columns, fill empty values so UserEntity can read non-null times.
+         * After adding the columns, fill empty values so UserEntity can read non-null values.
          */
         jdbcTemplate.update("update sys_user set created_at = current_timestamp where created_at is null");
         jdbcTemplate.update("update sys_user set updated_at = current_timestamp where updated_at is null");
+        jdbcTemplate.update("update sys_user set password = '123456' where password is null");
     }
 
     /**
@@ -50,6 +52,18 @@ public class UserSchemaInitializer implements CommandLineRunner {
     private void addTimestampColumnIfMissing(String columnName) {
         if (!columnExists(columnName)) {
             jdbcTemplate.execute("alter table sys_user add column " + columnName + " timestamp");
+        }
+    }
+
+    /**
+     * Adds one varchar column only when it does not already exist.
+     *
+     * We use this for the learning password field so an old local H2 database
+     * can still start after the entity gains a new column.
+     */
+    private void addVarcharColumnIfMissing(String columnName, int length) {
+        if (!columnExists(columnName)) {
+            jdbcTemplate.execute("alter table sys_user add column " + columnName + " varchar(" + length + ")");
         }
     }
 

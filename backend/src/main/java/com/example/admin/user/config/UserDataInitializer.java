@@ -48,6 +48,7 @@ public class UserDataInitializer implements CommandLineRunner {
         UserEntity user = new UserEntity();
         user.setUsername(username);
         user.setNickname(nickname);
+        user.setPassword("123456");
         user.setRole(role);
         user.setStatus(status);
         return user;

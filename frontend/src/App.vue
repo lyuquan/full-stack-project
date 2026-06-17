@@ -2,6 +2,15 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './api'
 
+// loginLoading controls the login button loading state.
+const loginLoading = ref(false)
+
+// loginError stores the message shown when POST /api/auth/login fails.
+const loginError = ref('')
+
+// currentUser stores the user information returned after login.
+const currentUser = ref(null)
+
 // systemLoading 控制“后端连接状态”区域的加载状态。
 const systemLoading = ref(false)
 
@@ -70,6 +79,12 @@ const searchForm = reactive({
   keyword: '',
   role: '',
   status: ''
+})
+
+// loginForm stores the username and password typed in the login panel.
+const loginForm = reactive({
+  username: 'admin',
+  password: '123456'
 })
 
 // pagination 保存分页状态：当前页、每页数量、符合条件的总条数。
@@ -305,6 +320,35 @@ function getApiErrorMessage(error, networkMessage) {
 }
 
 /**
+ * Submit login form.
+ *
+ * The backend returns basic user information after username/password are correct.
+ */
+async function login() {
+  loginLoading.value = true
+  loginError.value = ''
+
+  try {
+    currentUser.value = await apiPost('/api/auth/login', loginForm)
+  } catch (error) {
+    loginError.value = getApiErrorMessage(error, '?????????? Java ??????')
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+/**
+ * Clear current login user.
+ *
+ * This learning step only stores login state in memory. Refreshing the browser
+ * will clear it, and later we will learn token/localStorage persistence.
+ */
+function logout() {
+  currentUser.value = null
+  loginError.value = ''
+}
+
+/**
  * 提交用户表单。
  *
  * 新增模式：POST /api/users
@@ -492,6 +536,47 @@ onMounted(() => {
           重新请求
         </button>
       </header>
+
+      <section class="panel login-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">POST /api/auth/login</p>
+            <h2>????</h2>
+          </div>
+          <button
+            v-if="currentUser"
+            class="secondary-button"
+            type="button"
+            @click="logout"
+          >
+            ????
+          </button>
+        </div>
+
+        <form v-if="!currentUser" class="login-form" @submit.prevent="login">
+          <label>
+            <span>??</span>
+            <input v-model="loginForm.username" autocomplete="username" />
+          </label>
+
+          <label>
+            <span>??</span>
+            <input v-model="loginForm.password" type="password" autocomplete="current-password" />
+          </label>
+
+          <button class="submit-button" type="submit" :disabled="loginLoading">
+            {{ loginLoading ? '???...' : '??' }}
+          </button>
+        </form>
+
+        <p v-if="loginError" class="status error form-message">
+          {{ loginError }}
+        </p>
+
+        <p v-if="currentUser" class="status success">
+          ?????{{ currentUser.nickname }} / {{ currentUser.role }}
+        </p>
+      </section>
 
       <section class="panel status-panel">
         <h2>后端连接状态</h2>

@@ -851,6 +851,92 @@ userStats.value = await apiGet('/api/users/stats')
 
 这一步没有新增后端接口，只是把前端请求代码整理得更像真实项目。
 
+### 第 22 步：登录接口和登录表单
+
+目标：新增后台登录接口 `POST /api/auth/login`，并在前端页面增加一个登录表单，理解登录请求从前端到后端的完整流程。
+
+接口：
+
+```text
+POST /api/auth/login
+```
+
+请求体示例：
+
+```json
+{
+  "username": "admin",
+  "password": "123456"
+}
+```
+
+返回示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "username": "admin",
+    "nickname": "系统管理员",
+    "role": "超级管理员"
+  }
+}
+```
+
+为什么要做这一步：
+
+- 后台管理系统通常需要先登录，再进入管理页面。
+- 登录接口可以继续练习 `DTO -> Controller -> Service -> Repository -> VO` 的后端分层。
+- 这一步先做学习版登录，重点理解流程；真实项目后面还要继续升级密码加密、token 和权限拦截。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/dto/LoginDTO.java
+backend/src/main/java/com/example/admin/auth/vo/LoginVO.java
+backend/src/main/java/com/example/admin/auth/service/AuthService.java
+backend/src/main/java/com/example/admin/auth/controller/AuthController.java
+backend/src/main/java/com/example/admin/user/entity/UserEntity.java
+backend/src/main/java/com/example/admin/user/repository/UserRepository.java
+backend/src/main/java/com/example/admin/user/config/UserSchemaInitializer.java
+backend/src/main/java/com/example/admin/user/config/UserDataInitializer.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+backend/src/test/java/com/example/admin/auth/controller/AuthControllerTest.java
+frontend/src/App.vue
+frontend/src/style.css
+README.md
+```
+
+每个文件的作用：
+
+- `LoginDTO.java`：接收前端传来的 `username` 和 `password`，并校验不能为空。
+- `LoginVO.java`：登录成功后返回给前端的用户信息，不返回密码。
+- `AuthService.java`：处理登录业务，查账号、比对密码、判断账号是否禁用。
+- `AuthController.java`：提供 `POST /api/auth/login` 接口入口。
+- `UserEntity.java`：新增 `password` 字段，对应数据库里的密码列。
+- `UserRepository.java`：新增 `findByUsername`，登录时用账号查询用户。
+- `UserSchemaInitializer.java`：旧 H2 数据库启动时自动补 `password` 列，并给旧用户填默认密码。
+- `UserDataInitializer.java`：新数据库初始化演示用户时设置默认密码 `123456`。
+- `UserService.java`：新增用户时也设置默认密码 `123456`，避免密码字段为空。
+- `AuthControllerTest.java`：测试登录成功、密码错误、禁用用户不能登录。
+- `App.vue`：新增登录表单、当前登录用户状态、登录和退出方法。
+- `style.css`：新增登录表单样式。
+
+你需要理解：
+
+- `LoginDTO`：登录请求参数对象，属于“前端传给后端”的数据。
+- `LoginVO`：登录响应对象，属于“后端返回给前端”的数据。
+- `findByUsername`：Spring Data JPA 根据方法名自动生成按账号查询的 SQL。
+- `BusinessException`：登录失败时抛业务异常，比如账号密码错误、账号被禁用。
+- `@RequestMapping("/api/auth")`：认证相关接口统一放到 `/api/auth` 前缀下。
+- `@PostMapping("/login")`：表示这个方法处理 `POST /api/auth/login`。
+- `currentUser`：前端保存当前登录用户信息。
+- `loginForm`：前端登录表单数据，提交给登录接口。
+
+注意：这一步为了学习流程，密码暂时是明文 `123456`。真实项目不能明文保存密码，后面会继续学习密码加密和 token 登录。
+
 ## 启动后端
 
 进入后端目录：
