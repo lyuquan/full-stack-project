@@ -6,6 +6,7 @@ import com.example.admin.common.BusinessException;
 import com.example.admin.user.constant.UserConstants;
 import com.example.admin.user.entity.UserEntity;
 import com.example.admin.user.repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -25,15 +26,21 @@ public class AuthService {
      */
     private final UserRepository userRepository;
 
-    public AuthService(UserRepository userRepository) {
+    /**
+     * BCrypt 密码工具，用来校验用户输入的明文密码和数据库里的密文是否匹配。
+     */
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    public AuthService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
      * Login with username and password.
      *
-     * This is a learning version: password is compared as plain text.
-     * Real projects must compare encrypted password hashes instead.
+     * 前端传过来的是明文密码，数据库保存的是 BCrypt 密文。
+     * 所以这里不能再用 equals，而要用 passwordEncoder.matches 做安全校验。
      */
     public LoginVO login(LoginDTO loginDTO) {
         Optional<UserEntity> optionalUser = userRepository.findByUsername(loginDTO.getUsername());
@@ -44,7 +51,7 @@ public class AuthService {
 
         UserEntity user = optionalUser.get();
 
-        if (!user.getPassword().equals(loginDTO.getPassword())) {
+        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             throw new BusinessException(400, "账号或密码错误");
         }
 

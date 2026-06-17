@@ -1020,6 +1020,48 @@ README.md
 
 注意：这一步仍然是学习版校验。现在只检查 token 字符串格式，没有校验 token 是否真的是后端签发的。后面学习 JWT 时，会继续升级成“后端签发、后端验签、解析当前登录用户”的真实流程。
 
+### 第 25 步：使用 BCrypt 加密密码
+
+目标：把数据库里的明文密码升级成 BCrypt 密文。登录时不再用 `equals` 比较明文，而是用 `passwordEncoder.matches` 校验“用户输入的明文密码”和“数据库保存的密文”是否匹配。
+
+为什么要做这一步：
+
+- 第 22 步为了学习流程，数据库里暂时保存了明文密码 `123456`。
+- 真实项目绝对不能保存明文密码，因为数据库一旦泄露，用户密码会直接暴露。
+- BCrypt 会给密码加盐并多轮计算，即使两个用户密码一样，生成的密文通常也不一样。
+
+这一步新增或修改了什么：
+
+```text
+backend/pom.xml
+backend/src/main/java/com/example/admin/auth/config/PasswordConfig.java
+backend/src/main/java/com/example/admin/auth/service/AuthService.java
+backend/src/main/java/com/example/admin/user/config/UserDataInitializer.java
+backend/src/main/java/com/example/admin/user/service/UserService.java
+README.md
+```
+
+每个文件的作用：
+
+- `pom.xml`：新增 `spring-security-crypto` 依赖，提供 BCrypt 密码工具。
+- `PasswordConfig.java`：新增 `BCryptPasswordEncoder` Bean，让其他类可以通过构造方法注入使用。
+- `AuthService.java`：登录时使用 `passwordEncoder.matches(明文密码, 数据库密文)` 校验密码。
+- `UserDataInitializer.java`：初始化演示用户时保存 BCrypt 密文，并把旧数据库里的明文 `123456` 自动升级成密文。
+- `UserService.java`：后台新增用户时，默认密码 `123456` 也保存成 BCrypt 密文。
+- `README.md`：记录第 25 步的学习目标和代码含义。
+
+你需要理解：
+
+- `spring-security-crypto`：Spring 提供的密码加密工具包，可以单独使用，不等于启用完整 Spring Security。
+- `BCryptPasswordEncoder`：BCrypt 密码工具类。
+- `passwordEncoder.encode("123456")`：把明文密码生成 BCrypt 密文，保存到数据库。
+- `passwordEncoder.matches(rawPassword, encodedPassword)`：校验明文密码和密文是否匹配。
+- BCrypt 密文不能“解密回明文”：登录时不是解密，而是用算法判断输入密码是否能匹配这个密文。
+- `@Bean`：把一个对象交给 Spring 容器管理，其他类可以直接注入它。
+- 旧数据迁移：已有 H2 数据库里可能还保存明文 `123456`，所以启动时需要自动转成 BCrypt 密文。
+
+注意：这一步只解决“密码不能明文保存”。当前 token 仍然是学习版，后面还会继续学习真实 JWT、权限角色和接口授权。
+
 ## 启动后端
 
 进入后端目录：

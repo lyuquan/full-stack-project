@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -34,10 +35,16 @@ public class UserService {
     private final UserRepository userRepository;
 
     /**
+     * BCrypt 密码工具，用来把新用户默认密码保存成密文。
+     */
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    /**
      * Constructor injection makes required dependencies clear.
      */
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -146,7 +153,7 @@ public class UserService {
         UserEntity entity = new UserEntity();
         entity.setUsername(createUserDTO.getUsername());
         entity.setNickname(createUserDTO.getNickname());
-        entity.setPassword("123456");
+        entity.setPassword(passwordEncoder.encode("123456"));
         entity.setRole(createUserDTO.getRole());
         entity.setStatus(createUserDTO.getStatus());
 
