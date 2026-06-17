@@ -334,6 +334,7 @@ async function login() {
   try {
     currentUser.value = await apiPost('/api/auth/login', loginForm)
     saveLoginUser(currentUser.value)
+    await refreshUserData()
   } catch (error) {
     loginError.value = getApiErrorMessage(error, '登录请求失败，请确认 Java 后端已经启动')
   } finally {
@@ -351,6 +352,7 @@ function logout() {
   currentUser.value = null
   loginError.value = ''
   localStorage.removeItem(LOGIN_STORAGE_KEY)
+  clearProtectedData()
 }
 
 /**
@@ -385,6 +387,20 @@ function restoreLoginUser() {
  * 新增模式：POST /api/users
  * 编辑模式：PUT /api/users/{id}
  */
+/**
+ * 清空需要登录后才能查看的数据。
+ *
+ * 退出登录后，旧的用户列表和统计数据不应该继续留在页面上。
+ */
+function clearProtectedData() {
+  users.value = []
+  userStats.value = null
+  selectedUser.value = null
+  userError.value = ''
+  statsError.value = ''
+  detailError.value = ''
+}
+
 async function saveUser() {
   saveLoading.value = true
   saveMessage.value = ''
@@ -531,6 +547,11 @@ function resetForm() {
  * 同时刷新用户统计和用户列表。
  */
 function refreshUserData() {
+  if (!currentUser.value) {
+    clearProtectedData()
+    return Promise.resolve()
+  }
+
   return Promise.all([loadUserStats(), loadUsers()])
 }
 

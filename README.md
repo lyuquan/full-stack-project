@@ -979,6 +979,47 @@ README.md
 
 注意：这一步的 token 仍然是学习版。后端目前只是返回 token，前端也会携带 token，但还没有真正校验 token。真实项目通常会使用 JWT 或服务端 session，并且每个需要登录的接口都要校验权限。
 
+### 第 24 步：后端登录拦截器
+
+目标：让后端真正开始检查 `Authorization` 请求头。访问 `/api/users` 和 `/api/users/**` 时，必须带上学习版 token；没有 token 时返回 `401 请先登录`。
+
+为什么要做这一步：
+
+- 第 23 步前端已经会保存 token，也会自动把 token 放到请求头里。
+- 但是后端如果不检查 token，这个 token 就只是“前端自己带着玩”，没有保护接口的作用。
+- 拦截器可以在请求进入 Controller 之前先做统一检查，避免每个 Controller 方法都重复写登录校验。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/interceptor/LoginInterceptor.java
+backend/src/main/java/com/example/admin/config/WebConfig.java
+backend/src/test/java/com/example/admin/user/controller/UserControllerTest.java
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `LoginInterceptor.java`：新增登录拦截器，在 Controller 执行前检查 `Authorization` 请求头。
+- `WebConfig.java`：把登录拦截器注册到 Spring MVC，并指定拦截 `/api/users` 和 `/api/users/**`。
+- `UserControllerTest.java`：用户接口测试统一带上测试 token，并新增“没 token 返回 401”的测试。
+- `App.vue`：未登录时不主动请求用户接口；登录成功后再刷新用户列表和统计；退出登录后清空受保护数据。
+- `README.md`：记录第 24 步的学习目标和代码含义。
+
+你需要理解：
+
+- `HandlerInterceptor`：Spring MVC 的拦截器接口，请求进入 Controller 前会先经过它。
+- `preHandle`：拦截器里最常用的方法，返回 `true` 表示放行，返回 `false` 表示拦住。
+- `request.getHeader("Authorization")`：从 HTTP 请求头里读取 token。
+- `startsWith("Bearer study-token-")`：学习版校验，只判断 token 格式是否正确。
+- `response.setStatus(401)`：告诉前端“当前请求没有登录权限”。
+- `ObjectMapper`：把 `ApiResponse.error(401, "请先登录")` 这种 Java 对象转换成 JSON 字符串。
+- `WebMvcConfigurer`：Spring MVC 配置扩展点，常用来注册拦截器、跨域配置等。
+- `addPathPatterns("/api/users", "/api/users/**")`：指定哪些接口需要经过登录拦截器。
+
+注意：这一步仍然是学习版校验。现在只检查 token 字符串格式，没有校验 token 是否真的是后端签发的。后面学习 JWT 时，会继续升级成“后端签发、后端验签、解析当前登录用户”的真实流程。
+
 ## 启动后端
 
 进入后端目录：

@@ -28,6 +28,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UserControllerTest {
 
     /**
+     * 测试里使用的学习版登录请求头。
+     *
+     * 真实项目里 token 会先通过登录接口拿到，这里为了让用户接口测试专注于接口结果，
+     * 直接准备一个符合拦截器规则的测试 token。
+     */
+    private static final String TEST_AUTHORIZATION = "Bearer study-token-test";
+
+    /**
      * MockMvc is Spring's testing helper for simulating HTTP requests.
      */
     @Autowired
@@ -38,7 +46,8 @@ class UserControllerTest {
      */
     @Test
     void getUserStatsShouldReturnCounts() throws Exception {
-        mockMvc.perform(get("/api/users/stats"))
+        mockMvc.perform(get("/api/users/stats")
+                        .header("Authorization", TEST_AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data.totalCount", is(3)))
@@ -54,7 +63,8 @@ class UserControllerTest {
      */
     @Test
     void listRoleOptionsShouldReturnSupportedRoles() throws Exception {
-        mockMvc.perform(get("/api/users/roles"))
+        mockMvc.perform(get("/api/users/roles")
+                        .header("Authorization", TEST_AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data", hasSize(3)))
@@ -68,7 +78,8 @@ class UserControllerTest {
      */
     @Test
     void listStatusOptionsShouldReturnSupportedStatuses() throws Exception {
-        mockMvc.perform(get("/api/users/statuses"))
+        mockMvc.perform(get("/api/users/statuses")
+                        .header("Authorization", TEST_AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data", hasSize(2)))
@@ -76,5 +87,16 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data[0].label", is(UserConstants.STATUS_ENABLED_LABEL)))
                 .andExpect(jsonPath("$.data[1].value", is(UserConstants.STATUS_DISABLED)))
                 .andExpect(jsonPath("$.data[1].label", is(UserConstants.STATUS_DISABLED_LABEL)));
+    }
+
+    /**
+     * 没有 Authorization 请求头时，用户接口应该被登录拦截器拦住。
+     */
+    @Test
+    void userApiShouldRequireLoginToken() throws Exception {
+        mockMvc.perform(get("/api/users/stats"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code", is(401)))
+                .andExpect(jsonPath("$.message", is("请先登录")));
     }
 }
