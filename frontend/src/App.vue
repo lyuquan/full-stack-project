@@ -92,6 +92,11 @@ const roles = ref([])
 const roleLoading = ref(false)
 const roleError = ref('')
 
+// role detail state: data returned by GET /api/roles/{code}.
+const roleDetailLoading = ref(false)
+const roleDetailError = ref('')
+const selectedRole = ref(null)
+
 // user:write is the backend permission code for changing user data.
 const USER_WRITE_PERMISSION = 'user:write'
 
@@ -304,6 +309,23 @@ async function loadRoles() {
 }
 
 /**
+ * Load a single role detail by code.
+ */
+async function loadRoleDetail(code) {
+  roleDetailLoading.value = true
+  roleDetailError.value = ''
+  selectedRole.value = null
+
+  try {
+    selectedRole.value = await apiGet(`/api/roles/${code}`)
+  } catch (error) {
+    roleDetailError.value = getApiErrorMessage(error, '无法连接角色详情接口，请确认 Java 后端已经启动')
+  } finally {
+    roleDetailLoading.value = false
+  }
+}
+
+/**
  * Load a single user detail by id.
  */
 async function loadUserDetail(id) {
@@ -326,6 +348,14 @@ async function loadUserDetail(id) {
 function clearUserDetail() {
   selectedUser.value = null
   detailError.value = ''
+}
+
+/**
+ * Clear the role detail panel.
+ */
+function clearRoleDetail() {
+  selectedRole.value = null
+  roleDetailError.value = ''
 }
 
 /**
@@ -435,12 +465,14 @@ function clearProtectedData() {
   roles.value = []
   menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
   selectedUser.value = null
+  selectedRole.value = null
   userError.value = ''
   statsError.value = ''
   roleOptionsError.value = ''
   statusOptionsError.value = ''
   detailError.value = ''
   roleError.value = ''
+  roleDetailError.value = ''
   router.replace('/')
 }
 
@@ -749,6 +781,9 @@ watch(
         :role-loading="roleLoading"
         :role-error="roleError"
         :roles="roles"
+        :role-detail-loading="roleDetailLoading"
+        :role-detail-error="roleDetailError"
+        :selected-role="selectedRole"
         @load-user-stats="loadUserStats"
         @clear-user-detail="clearUserDetail"
         @submit-search="submitSearch"
@@ -763,6 +798,8 @@ watch(
         @delete-user="deleteUser"
         @go-to-page="goToPage"
         @load-roles="loadRoles"
+        @load-role-detail="loadRoleDetail"
+        @clear-role-detail="clearRoleDetail"
       />
     </section>
   </main>

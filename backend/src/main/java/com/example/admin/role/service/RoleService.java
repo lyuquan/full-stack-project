@@ -43,4 +43,23 @@ public class RoleService {
 
         return roles;
     }
+
+    /**
+     * Query one role by role code.
+     *
+     * code comes from the URL path, for example GET /api/roles/operator.
+     * Returning null means the role does not exist, and Controller will turn it
+     * into a unified 404 response for the frontend.
+     */
+    public RoleVO getRoleByCode(String code) {
+        List<RoleVO> roles = listRoles();
+
+        for (RoleVO role : roles) {
+            if (role.getCode().equals(code)) {
+                return role;
+            }
+        }
+
+        return null;
+    }
 }

@@ -1606,3 +1606,31 @@ http://localhost:5173
 ## 代码生成约定
 
 每次新增代码时，都会加清晰注释，说明这段代码的职责和用途，方便边写边学。
+
+### 第 38 步：角色详情接口
+
+目标：在角色管理页面点击“查看”，调用后端 `GET /api/roles/{code}` 查询单个角色详情。
+
+为什么要做这一步：
+
+- 角色列表 `GET /api/roles` 返回的是一批角色，适合表格展示。
+- 角色详情 `GET /api/roles/{code}` 返回的是一个角色，适合详情面板展示。
+- 这一步继续练习后端常见写法：`@PathVariable` 从 URL 路径里读取参数。
+- 查不到角色时，后端返回统一结构 `{ code: 404, message: "...", data: null }`，前端可以统一显示错误。
+
+这一步新增或修改了什么：
+
+- `RoleService.java`：新增 `getRoleByCode(code)`，根据角色编码查找一个角色。
+- `RoleController.java`：新增 `GET /api/roles/{code}`，接收路径里的角色编码并返回详情。
+- `RoleControllerTest.java`：新增角色详情测试，覆盖查到角色和查不到角色两种情况。
+- `App.vue`：新增角色详情状态、请求方法和清空详情方法。
+- `RolesPage.vue`：角色表格新增“查看”按钮，并新增角色详情展示区域。
+- `style.css`：给角色详情区域补充间距和分隔线。
+
+你需要理解：
+
+- `@GetMapping("/{code}")`：匹配 `/api/roles/operator` 这种路径。
+- `@PathVariable String code`：把 URL 里的 `operator` 取出来放到 Java 变量 `code` 中。
+- `getRoleByCode`：Service 层业务方法，负责真正查找角色。
+- `selectedRole`：前端保存当前正在查看的角色详情。
+- `emit('loadRoleDetail', role.code)`：子组件告诉父组件“我要查这个角色详情”。

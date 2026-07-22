@@ -72,6 +72,32 @@ class RoleControllerTest {
                 .andExpect(jsonPath("$.message", is("请先登录")));
     }
 
+    /**
+     * Logged-in users can query one role detail by role code.
+     */
+    @Test
+    void getRoleDetailShouldReturnRoleWhenLoggedIn() throws Exception {
+        mockMvc.perform(get("/api/roles/operator")
+                        .header("Authorization", getAuthorizationHeader()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data.code", is("operator")))
+                .andExpect(jsonPath("$.data.name", is(UserConstants.ROLE_OPERATOR)))
+                .andExpect(jsonPath("$.data.permissionCount", is(1)));
+    }
+
+    /**
+     * Unknown role code should return a unified business 404 response.
+     */
+    @Test
+    void getRoleDetailShouldReturn404WhenRoleNotFound() throws Exception {
+        mockMvc.perform(get("/api/roles/unknown")
+                        .header("Authorization", getAuthorizationHeader()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(404)))
+                .andExpect(jsonPath("$.message", is("Role does not exist")));
+    }
+
     private String getAuthorizationHeader() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

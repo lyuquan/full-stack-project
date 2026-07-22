@@ -4,6 +4,7 @@ import com.example.admin.common.ApiResponse;
 import com.example.admin.role.service.RoleService;
 import com.example.admin.role.vo.RoleVO;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -36,5 +37,21 @@ public class RoleController {
     @GetMapping
     public ApiResponse<List<RoleVO>> listRoles() {
         return ApiResponse.success(roleService.listRoles());
+    }
+
+    /**
+     * Query one role detail by role code.
+     *
+     * Example: GET /api/roles/operator
+     */
+    @GetMapping("/{code}")
+    public ApiResponse<RoleVO> getRoleDetail(@PathVariable String code) {
+        RoleVO role = roleService.getRoleByCode(code);
+
+        if (role == null) {
+            return ApiResponse.error(404, "Role does not exist");
+        }
+
+        return ApiResponse.success(role);
     }
 }

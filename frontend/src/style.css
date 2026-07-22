@@ -152,6 +152,13 @@ h2 {
   overflow: hidden;
 }
 
+/* Role detail sits below the role table, so it needs its own spacing. */
+.role-detail-panel {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
 .panel-header {
   display: flex;
   align-items: center;
