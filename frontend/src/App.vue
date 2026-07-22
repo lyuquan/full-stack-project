@@ -22,7 +22,11 @@ const currentUser = ref(null)
 
 // menus stores sidebar menus returned by GET /api/auth/menus.
 // The backend decides which menu entries the current login user can see.
-const menus = ref([{ key: 'home', label: '系统首页', active: false }])
+const menus = ref([{ key: 'home', label: '系统首页', path: '/', active: true }])
+
+// currentMenuKey stores the menu selected on the frontend.
+// The backend returns which menus can be seen, but the frontend controls which one is currently active.
+const currentMenuKey = ref('home')
 
 // LOGIN_STORAGE_KEY 是保存登录用户的 localStorage key，刷新页面后还能找回登录状态。
 const LOGIN_STORAGE_KEY = 'admin-study-login-user'
@@ -141,6 +145,17 @@ function hasPermission(permissionCode) {
 // canManageUsers controls whether the current login user can change user data.
 // It is calculated from the backend permission list instead of role text.
 const canManageUsers = computed(() => hasPermission(USER_WRITE_PERMISSION))
+
+// currentMenu finds the full menu object for the selected key.
+// The fallback keeps the page stable when menus are still loading.
+const currentMenu = computed(() => {
+  return menus.value.find((menu) => menu.key === currentMenuKey.value) || menus.value[0]
+})
+
+// These computed values decide which page blocks should be displayed.
+const isHomePage = computed(() => currentMenuKey.value === 'home')
+const isUsersPage = computed(() => currentMenuKey.value === 'users')
+const isRolesPage = computed(() => currentMenuKey.value === 'roles')
 
 /**
  * 请求后端健康检查接口，用来确认前后端是否已经连通。
@@ -261,11 +276,42 @@ async function loadStatusOptions() {
  */
 async function loadMenus() {
   if (!currentUser.value) {
-    menus.value = [{ key: 'home', label: '系统首页', active: false }]
+    menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
+    currentMenuKey.value = 'home'
     return
   }
 
   menus.value = await apiGet('/api/auth/menus')
+  normalizeCurrentMenu()
+}
+
+/**
+ * Keep currentMenuKey pointing to a menu the current user can see.
+ *
+ * Example: if a non-super-admin user has no "roles" menu, the page should
+ * automatically fall back to the first visible menu.
+ */
+function normalizeCurrentMenu() {
+  if (menus.value.length === 0) {
+    currentMenuKey.value = 'home'
+    return
+  }
+
+  const exists = menus.value.some((menu) => menu.key === currentMenuKey.value)
+
+  if (!exists) {
+    currentMenuKey.value = menus.value[0].key
+  }
+}
+
+/**
+ * Select a sidebar menu.
+ *
+ * This step only changes frontend view state. The path returned by the backend
+ * is displayed in the page header first; later it can be connected to Vue Router.
+ */
+function selectMenu(menu) {
+  currentMenuKey.value = menu.key
 }
 
 async function loadUserDetail(id) {
@@ -450,7 +496,8 @@ function clearProtectedData() {
   userStats.value = null
   roleOptions.value = []
   statusOptions.value = []
-  menus.value = [{ key: 'home', label: '系统首页', active: false }]
+  menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
+  currentMenuKey.value = 'home'
   selectedUser.value = null
   userError.value = ''
   statsError.value = ''
@@ -656,22 +703,24 @@ onMounted(async () => {
     <aside class="sidebar">
       <div class="brand">Admin Study</div>
       <nav class="menu">
-        <span
+        <button
           v-for="menu in menus"
           :key="menu.key"
           class="menu-item"
-          :class="{ active: menu.active }"
+          :class="{ active: menu.key === currentMenuKey }"
+          type="button"
+          @click="selectMenu(menu)"
         >
           {{ menu.label }}
-        </span>
+        </button>
       </nav>
     </aside>
 
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Step 10</p>
-          <h1>用户详情查询</h1>
+          <p class="eyebrow">{{ currentMenu ? currentMenu.path : '/' }}</p>
+          <h1>{{ currentMenu ? currentMenu.label : '系统首页' }}</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
           重新请求
@@ -719,7 +768,7 @@ onMounted(async () => {
         </p>
       </section>
 
-      <section class="panel status-panel">
+      <section v-if="isHomePage" class="panel status-panel">
         <h2>后端连接状态</h2>
 
         <p v-if="systemLoading" class="status muted">正在请求系统接口...</p>
@@ -737,7 +786,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <section class="panel stats-panel">
+      <section v-if="isUsersPage" class="panel stats-panel">
         <div class="panel-header">
           <div>
             <p class="eyebrow">GET /api/users/stats</p>
@@ -782,7 +831,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <section class="panel detail-panel">
+      <section v-if="isUsersPage" class="panel detail-panel">
         <div class="panel-header">
           <div>
             <p class="eyebrow">GET /api/users/{id}</p>
@@ -830,7 +879,7 @@ onMounted(async () => {
         <p v-else class="status muted">点击表格里的“查看”，这里会显示单个用户详情。</p>
       </section>
 
-      <section class="panel search-panel">
+      <section v-if="isUsersPage" class="panel search-panel">
         <div class="panel-header">
           <div>
             <p class="eyebrow">GET /api/users?keyword=&role=&status=&page=&size=</p>
@@ -891,7 +940,7 @@ onMounted(async () => {
         </form>
       </section>
 
-      <section class="panel form-panel">
+      <section v-if="isUsersPage" class="panel form-panel">
         <div class="panel-header">
           <div>
             <p class="eyebrow">
@@ -964,7 +1013,7 @@ onMounted(async () => {
         </p>
       </section>
 
-      <section class="panel table-panel">
+      <section v-if="isUsersPage" class="panel table-panel">
         <div class="panel-header">
           <div>
             <p class="eyebrow">GET / POST / PUT / PATCH / DELETE</p>
@@ -1077,6 +1126,19 @@ onMounted(async () => {
             </div>
           </div>
         </div>
+      </section>
+
+      <section v-if="isRolesPage" class="panel roles-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">GET /api/auth/menus</p>
+            <h2>角色管理</h2>
+          </div>
+        </div>
+
+        <p class="status muted">
+          当前只先开放角色管理菜单入口，真实的角色列表、角色新增和角色权限分配会在后续步骤继续完成。
+        </p>
       </section>
     </section>
   </main>

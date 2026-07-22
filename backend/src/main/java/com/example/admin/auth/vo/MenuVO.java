@@ -19,6 +19,11 @@ public class MenuVO {
     private String label;
 
     /**
+     * Frontend page path represented by this menu.
+     */
+    private String path;
+
+    /**
      * Whether this menu is the current active entry.
      */
     private Boolean active;
@@ -26,9 +31,10 @@ public class MenuVO {
     public MenuVO() {
     }
 
-    public MenuVO(String key, String label, Boolean active) {
+    public MenuVO(String key, String label, String path, Boolean active) {
         this.key = key;
         this.label = label;
+        this.path = path;
         this.active = active;
     }
 
@@ -46,6 +52,14 @@ public class MenuVO {
 
     public void setLabel(String label) {
         this.label = label;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public Boolean getActive() {

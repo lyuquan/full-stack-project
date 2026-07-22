@@ -92,14 +92,14 @@ public class AuthService {
     public List<MenuVO> listMenus(List<String> permissions) {
         List<MenuVO> menus = new ArrayList<MenuVO>();
 
-        menus.add(new MenuVO("home", "系统首页", false));
+        menus.add(new MenuVO("home", "系统首页", "/", true));
 
         if (permissions != null && permissions.contains(AuthPermissions.USER_READ)) {
-            menus.add(new MenuVO("users", "用户管理", false));
+            menus.add(new MenuVO("users", "用户管理", "/users", false));
         }
 
         if (permissions != null && permissions.contains(AuthPermissions.ROLE_MANAGE)) {
-            menus.add(new MenuVO("roles", "角色管理", true));
+            menus.add(new MenuVO("roles", "角色管理", "/roles", false));
         }
 
         return menus;

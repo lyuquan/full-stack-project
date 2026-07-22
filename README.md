@@ -1393,6 +1393,68 @@ README.md
 
 注意：现在菜单仍然是后端代码写死生成的。真实项目里，菜单通常会放进数据库表，例如 `sys_menu`，再通过角色权限关系查询出来。
 
+### 第 34 步：点击菜单切换前端页面
+
+目标：让后端返回的菜单多一个 `path` 字段，前端点击左侧菜单后切换当前页面内容，并根据当前菜单高亮。
+
+为什么要做这一步：
+
+- 第 33 步已经让菜单列表来自后端，但菜单还只是显示文字，不能点击切换页面。
+- 真实后台系统里，菜单通常会包含 `key`、`label`、`path`、`icon`、`permission` 等信息。
+- 后端负责告诉前端“当前用户能看到哪些菜单”，前端负责维护“当前选中了哪个菜单”。
+- 这一步先不用 Vue Router，只用 `currentMenuKey` 学习前端页面状态切换，后面再接真正路由。
+
+接口：
+
+```text
+GET /api/auth/menus
+```
+
+超级管理员示例返回：
+
+```json
+[
+  {
+    "key": "home",
+    "label": "系统首页",
+    "path": "/",
+    "active": true
+  },
+  {
+    "key": "users",
+    "label": "用户管理",
+    "path": "/users",
+    "active": false
+  },
+  {
+    "key": "roles",
+    "label": "角色管理",
+    "path": "/roles",
+    "active": false
+  }
+]
+```
+
+这一步新增或修改了什么：
+
+- `MenuVO.java`：新增 `path` 字段，表示这个菜单对应的前端页面路径。
+- `AuthService.java`：创建菜单时补上 `/`、`/users`、`/roles` 这几个路径。
+- `AuthControllerTest.java`：菜单接口测试新增 `path` 断言，保证后端真的返回路径。
+- `App.vue`：新增 `currentMenuKey`、`currentMenu`、`isHomePage`、`isUsersPage`、`isRolesPage` 和 `selectMenu(menu)`。
+- `style.css`：左侧菜单项从普通文字改成按钮样式，支持点击和 hover 效果。
+- `README.md`：记录第 34 步的学习目标、接口结构和文件职责。
+
+你需要理解：
+
+- `path`：菜单对应的页面地址，例如 `/users`。现在先展示在标题上，后面可以接 Vue Router。
+- `currentMenuKey`：前端当前选中的菜单 key，例如 `home` 或 `users`。
+- `selectMenu(menu)`：点击菜单时执行，把当前菜单 key 改成被点击的菜单。
+- `computed`：根据已有状态计算新状态，例如 `isUsersPage` 根据 `currentMenuKey` 判断是否显示用户管理内容。
+- `v-if="isUsersPage"`：只有当前菜单是用户管理时，才渲染用户统计、筛选、表单和表格。
+- 后端菜单数据和前端页面状态是两件事：后端决定“能看什么”，前端决定“当前正在看什么”。
+
+注意：这一步还没有引入 Vue Router，所以刷新浏览器地址不会进入 `/users` 或 `/roles`。等菜单和页面状态理解清楚后，再学习真正的前端路由会更顺。
+
 ## 启动后端
 
 进入后端目录：

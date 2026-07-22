@@ -138,9 +138,12 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data", hasSize(3)))
                 .andExpect(jsonPath("$.data[0].key", is("home")))
+                .andExpect(jsonPath("$.data[0].path", is("/")))
+                .andExpect(jsonPath("$.data[0].active", is(true)))
                 .andExpect(jsonPath("$.data[1].key", is("users")))
-                .andExpect(jsonPath("$.data[1].active", is(true)))
-                .andExpect(jsonPath("$.data[2].key", is("roles")));
+                .andExpect(jsonPath("$.data[1].path", is("/users")))
+                .andExpect(jsonPath("$.data[2].key", is("roles")))
+                .andExpect(jsonPath("$.data[2].path", is("/roles")));
     }
 
     /**
@@ -154,7 +157,9 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.data[0].key", is("home")))
-                .andExpect(jsonPath("$.data[1].key", is("users")));
+                .andExpect(jsonPath("$.data[0].path", is("/")))
+                .andExpect(jsonPath("$.data[1].key", is("users")))
+                .andExpect(jsonPath("$.data[1].path", is("/users")));
     }
 
     /**
