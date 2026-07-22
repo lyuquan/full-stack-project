@@ -2,6 +2,7 @@ package com.example.admin.config;
 
 import com.example.admin.auth.interceptor.AdminPermissionInterceptor;
 import com.example.admin.auth.interceptor.LoginInterceptor;
+import com.example.admin.auth.interceptor.RoleManagePermissionInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -24,9 +25,19 @@ public class WebConfig implements WebMvcConfigurer {
      */
     private final AdminPermissionInterceptor adminPermissionInterceptor;
 
-    public WebConfig(LoginInterceptor loginInterceptor, AdminPermissionInterceptor adminPermissionInterceptor) {
+    /**
+     * 角色管理权限拦截器，用来限制角色管理接口。
+     */
+    private final RoleManagePermissionInterceptor roleManagePermissionInterceptor;
+
+    public WebConfig(
+            LoginInterceptor loginInterceptor,
+            AdminPermissionInterceptor adminPermissionInterceptor,
+            RoleManagePermissionInterceptor roleManagePermissionInterceptor
+    ) {
         this.loginInterceptor = loginInterceptor;
         this.adminPermissionInterceptor = adminPermissionInterceptor;
+        this.roleManagePermissionInterceptor = roleManagePermissionInterceptor;
     }
 
     /**
@@ -55,6 +66,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns(
                         "/api/users",
                         "/api/users/**"
+                );
+
+        registry.addInterceptor(roleManagePermissionInterceptor)
+                .addPathPatterns(
+                        "/api/roles",
+                        "/api/roles/**"
                 );
     }
 }

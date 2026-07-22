@@ -62,4 +62,11 @@ public final class AuthPermissions {
     public static boolean canManageUsers(List<String> permissions) {
         return permissions != null && permissions.contains(USER_WRITE);
     }
+
+    /**
+     * Check whether a permission list contains role management permission.
+     */
+    public static boolean canManageRoles(List<String> permissions) {
+        return permissions != null && permissions.contains(ROLE_MANAGE);
+    }
 }

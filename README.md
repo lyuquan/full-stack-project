@@ -1854,3 +1854,31 @@ http://localhost:5173
 - `authTokenService.createToken(user, permissions)`：创建 token 时，把登录服务算好的权限一起保存进去。
 - `登录权限快照`：用户登录时拿到一份权限，之后角色权限如果被修改，旧 token 不会自动变化，需要重新登录。
 - `RoleSchemaInitializer`：解决本地旧 H2 数据库表结构跟不上新代码的问题，属于学习项目里的简易数据库迁移。
+
+### 第 46 步：角色管理接口增加权限拦截
+
+目标：访问 `/api/roles` 相关接口时，不再只判断“是否登录”，还要判断当前用户是否拥有 `role:manage` 权限。
+
+为什么要做这一步：
+
+- 前端隐藏菜单只能提升使用体验，不能当成真正安全控制，因为用户仍然可以用浏览器控制台或接口工具直接请求后端。
+- 后台系统必须在后端接口层做权限判断，后端才是最后一道规则入口。
+- 第 45 步已经让登录权限来自角色表，所以这一步可以直接使用 token 里的权限列表判断能不能管理角色。
+- 角色接口包含查询、新增、编辑、删除、分配权限，这些都属于角色管理能力，统一要求 `role:manage` 更容易理解。
+
+这一 新增或修改了什么：
+
+- `AuthPermissions.java`：新增 `canManageRoles()`，统一判断权限列表里是否包含 `role:manage`。
+- `RoleManagePermissionInterceptor.java`：新增角色管理权限拦截器，拦截没有 `role:manage` 的请求并返回 403。
+- `WebConfig.java`：把 `RoleManagePermissionInterceptor` 注册到 `/api/roles` 和 `/api/roles/**`。
+- `RoleControllerTest.java`：新增测试，验证运营管理员登录后访问角色列表会被拒绝。
+- `README.md`：记录第 46 步学习内容。
+
+你需要理解：
+
+- `LoginInterceptor`：只负责判断有没有登录，没有 token 返回 401。
+- `RoleManagePermissionInterceptor`：负责判断有没有角色管理权限，没有 `role:manage` 返回 403。
+- `401`：没有登录，身份未知。
+- `403`：已经登录，但权限不够。
+- `registry.addInterceptor(...).addPathPatterns("/api/roles", "/api/roles/**")`：把拦截器绑定到角色管理相关接口。
+- `AuthPermissions.canManageRoles()`：把权限判断封装成方法，避免到处写 `permissions.contains("role:manage")`。

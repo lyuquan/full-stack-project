@@ -47,7 +47,7 @@ class RoleControllerTest {
     private ObjectMapper objectMapper;
 
     /**
-     * Logged-in users should be able to query role list data.
+     * Users with role:manage should be able to query role list data.
      */
     @Test
     void listRolesShouldReturnRoleListWhenLoggedIn() throws Exception {
@@ -60,6 +60,18 @@ class RoleControllerTest {
                 .andExpect(jsonPath("$.data[0].permissionCount", is(3)))
                 .andExpect(jsonPath("$.data[1].code", is("operator")))
                 .andExpect(jsonPath("$.data[2].code", is("readonly")));
+    }
+
+    /**
+     * Logged-in users without role:manage should be rejected by the role permission interceptor.
+     */
+    @Test
+    void listRolesShouldReturn403WhenUserHasNoRoleManagePermission() throws Exception {
+        mockMvc.perform(get("/api/roles")
+                        .header("Authorization", getAuthorizationHeader("manager")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code", is(403)))
+                .andExpect(jsonPath("$.message", is("没有角色管理权限")));
     }
 
     /**
@@ -286,9 +298,16 @@ class RoleControllerTest {
     }
 
     private String getAuthorizationHeader() throws Exception {
+        return getAuthorizationHeader("admin");
+    }
+
+    /**
+     * Login with the given username and build the Authorization header.
+     */
+    private String getAuthorizationHeader(String username) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"123456\"}"))
+                        .content("{\"username\":\"" + username + "\",\"password\":\"123456\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andReturn();
