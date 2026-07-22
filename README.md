@@ -1487,6 +1487,77 @@ GET /api/auth/menus
 
 注意：这一步为了降低学习难度，还没有把页面拆成多个 Vue 文件，也没有使用 `<router-view>`。现在先让路由和菜单联动跑通，下一步可以继续把“用户管理页”和“角色管理页”拆成独立页面组件。
 
+### 第 36 步：角色列表接口
+
+目标：新增 `GET /api/roles`，让“角色管理”页面可以从后端查询角色列表。
+
+为什么要做这一步：
+
+- 第 35 步已经有 `/roles` 前端路由，但角色管理页还只是占位内容。
+- 后台管理系统通常不只有用户模块，还会有角色、权限、菜单等模块。
+- 新增一个 `role` 模块，可以继续练习后端常见分层：`Controller -> Service -> VO`。
+- 这一步先用固定角色数据，后面再升级成数据库角色表。
+
+接口：
+
+```text
+GET /api/roles
+```
+
+这一步新增或修改了什么：
+
+- `RoleVO.java`：新增角色列表返回对象，定义前端能看到的角色字段。
+- `RoleService.java`：新增角色业务层，先返回固定的三个角色。
+- `RoleController.java`：新增角色接口入口，提供 `GET /api/roles`。
+- `RoleControllerTest.java`：新增角色接口测试，确认登录后能查角色、未登录不能查角色。
+- `WebConfig.java`：把 `/api/roles` 和 `/api/roles/**` 加入登录拦截器保护范围。
+- `App.vue`：角色管理页新增 `roles`、`roleLoading`、`roleError` 和 `loadRoles()`，并用表格展示角色列表。
+- `README.md`：记录第 36 步的学习目标、接口和文件职责。
+
+你需要理解：
+
+- `RoleController`：接收前端 HTTP 请求，例如 `GET /api/roles`。
+- `RoleService`：处理角色业务逻辑。现在是固定数组，后面可以改成查数据库。
+- `RoleVO`：返回给前端展示的数据结构，不等于数据库表。
+- `List<RoleVO>`：表示返回多个角色对象。
+- `@RestController`：告诉 Spring 这个类返回 JSON 接口。
+- `@RequestMapping("/api/roles")`：定义这个 Controller 的统一接口前缀。
+- `@GetMapping`：表示这个方法处理 GET 请求。
+- 前端 `loadRoles()`：调用 `GET /api/roles`，把返回结果保存到 `roles`，页面再用 `v-for` 渲染表格。
+
+注意：这一步的角色列表还是写死在 Java 代码里的。真实项目中会继续建 `sys_role` 表、`RoleEntity`、`RoleRepository`，再从数据库查询角色列表。
+
+### 第 37 步：拆分前端路由页面组件
+
+目标：把原来挤在 `App.vue` 里的页面内容拆到 `frontend/src/pages` 目录，让 Vue Router 真正渲染不同页面组件。
+
+为什么要做这一步：
+
+- 第 35 步已经引入了 Vue Router，但当时路由组件还是占位写法。
+- 后台系统功能会越来越多，如果所有页面都写在 `App.vue`，文件会越来越长，也越来越难维护。
+- 真实前端项目通常会把页面放到 `pages` 或 `views` 目录，例如首页、用户管理页、角色管理页。
+- `App.vue` 更适合做全局布局：左侧菜单、顶部栏、登录状态、路由出口。
+
+这一步新增或修改了什么：
+
+- `frontend/src/pages/HomePage.vue`：新增首页组件，负责展示后端连接状态。
+- `frontend/src/pages/UsersPage.vue`：新增用户管理页面组件，负责展示用户统计、详情、筛选、表单和表格。
+- `frontend/src/pages/RolesPage.vue`：新增角色管理页面组件，负责展示角色列表。
+- `frontend/src/main.js`：路由表不再使用占位组件，而是分别指向 `HomePage`、`UsersPage`、`RolesPage`。
+- `frontend/src/App.vue`：从“所有页面都写在一个文件”改成“全局布局 + `<RouterView>`”，并把页面需要的数据和方法传给路由页面组件。
+- `README.md`：记录第 37 步的学习目标、文件职责和核心概念。
+
+你需要理解：
+
+- `pages`：页面级组件目录，通常一个路由对应一个页面组件。
+- `<RouterView>`：Vue Router 的路由出口，当前地址匹配哪个路由，就渲染哪个页面组件。
+- `props`：父组件传给子组件的数据，例如 `users`、`userStats`、`roles`。
+- `emit`：子组件通知父组件做事，例如点击“刷新用户”时触发 `loadUsers`。
+- `App.vue`：现在更像后台系统的外壳，负责菜单、登录、刷新和数据协调。
+- `UsersPage.vue`：只关心用户管理页面怎么显示，不直接管理登录和菜单。
+
+注意：这一步为了降低学习难度，数据请求方法还放在 `App.vue`。后面可以继续把用户模块的请求和状态也移动到 `UsersPage.vue`，让每个页面自己管理自己的数据。
+
 ## 启动后端
 
 进入后端目录：

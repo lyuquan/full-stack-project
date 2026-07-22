@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 import {
   apiDelete,
   apiGet,
@@ -12,116 +12,58 @@ import {
   saveStoredLoginUser
 } from './api'
 
-// route stores the current frontend URL information, such as /, /users or /roles.
+// route reads the current browser path, such as /, /users or /roles.
 const route = useRoute()
 
-// router is used when JavaScript wants to change the browser URL.
+// router lets JavaScript jump to another frontend route.
 const router = useRouter()
 
-// loginLoading controls the login button loading state.
-const loginLoading = ref(false)
-
-// loginError stores the message shown when POST /api/auth/login fails.
-const loginError = ref('')
-
-// currentUser stores the user information returned after login.
+// currentUser stores the login user returned by POST /api/auth/login or GET /api/auth/me.
 const currentUser = ref(null)
 
-// menus stores sidebar menus returned by GET /api/auth/menus.
-// The backend decides which menu entries the current login user can see.
-const menus = ref([{ key: 'home', label: '系统首页', path: '/', active: true }])
-
-// currentMenuKey stores the menu matched from the current browser URL.
-// The backend decides visible menus, and Vue Router decides which path is currently opened.
-const currentMenuKey = ref('home')
-
-// LOGIN_STORAGE_KEY 是保存登录用户的 localStorage key，刷新页面后还能找回登录状态。
-const LOGIN_STORAGE_KEY = 'admin-study-login-user'
-
-// systemLoading 控制“后端连接状态”区域的加载状态。
-const systemLoading = ref(false)
-
-// systemError 保存 /api/system/hello 请求失败时的错误提示。
-const systemError = ref('')
-
-// backendInfo 保存后端系统接口返回的数据。
-const backendInfo = ref(null)
-
-// userLoading 控制用户表格的加载状态。
-const userLoading = ref(false)
-
-// userError 保存用户列表、新增、编辑、删除接口的错误提示。
-const userError = ref('')
-
-// users 保存当前页的用户数组，它来自后端返回的 data.records。
-const users = ref([])
-
-// statsLoading 控制统计卡片的加载状态。
-const statsLoading = ref(false)
-
-// statsError 保存 GET /api/users/stats 请求失败时的错误提示。
-const statsError = ref('')
-
-// userStats 保存后端统计接口返回的用户总数、启用数、禁用数和角色人数。
-const userStats = ref(null)
-
-// roleOptions 保存 GET /api/users/roles 返回的角色下拉选项。
-const roleOptions = ref([])
-
-// roleOptionsError 保存角色选项接口失败时的提示，避免下拉框无声失败。
-const roleOptionsError = ref('')
-
-// statusOptions 保存 GET /api/users/statuses 返回的状态下拉选项。
-const statusOptions = ref([])
-
-// statusOptionsError 保存状态选项接口失败时的提示。
-const statusOptionsError = ref('')
-
-// detailLoading 控制用户详情区域的加载状态。
-const detailLoading = ref(false)
-
-// detailError 保存 GET /api/users/{id} 查询详情失败时的错误提示。
-const detailError = ref('')
-
-// selectedUser 保存当前正在查看详情的用户。
-const selectedUser = ref(null)
-
-// saveLoading 控制新增或编辑用户时的提交按钮状态。
-const saveLoading = ref(false)
-
-// saveMessage 保存新增、编辑、删除成功后的提示。
-const saveMessage = ref('')
-
-// deleteLoadingId 保存正在删除的用户 ID，用来禁用当前行的删除按钮。
-const deleteLoadingId = ref(null)
-
-// statusLoadingId 保存正在启用或禁用的用户 ID，用来禁用当前行的状态按钮。
-const statusLoadingId = ref(null)
-
-// editingUserId 为 null 表示新增模式，有值表示正在编辑某个用户。
-const editingUserId = ref(null)
-
-// searchForm 保存列表筛选条件，会拼到 GET /api/users 的查询参数里。
-const searchForm = reactive({
-  keyword: '',
-  role: '',
-  status: ''
-})
-
-// loginForm stores the username and password typed in the login panel.
+// loginForm stores the username and password typed in the login form.
 const loginForm = reactive({
   username: 'admin',
   password: '123456'
 })
 
-// pagination 保存分页状态：当前页、每页数量、符合条件的总条数。
-const pagination = reactive({
-  page: 1,
-  size: 5,
-  total: 0
-})
+// loginLoading and loginError control the login panel state.
+const loginLoading = ref(false)
+const loginError = ref('')
 
-// userForm 是表单数据，会提交给 POST /api/users 或 PUT /api/users/{id}。
+// menus stores sidebar menus returned by GET /api/auth/menus.
+const menus = ref([{ key: 'home', label: '系统首页', path: '/', active: true }])
+
+// backendInfo group: data shown on the home page.
+const systemLoading = ref(false)
+const systemError = ref('')
+const backendInfo = ref(null)
+
+// user list state: table data, loading state and error message.
+const userLoading = ref(false)
+const userError = ref('')
+const users = ref([])
+
+// user statistics state: cards on the user management page.
+const statsLoading = ref(false)
+const statsError = ref('')
+const userStats = ref(null)
+
+// roleOptions and statusOptions are select options used by search and user forms.
+const roleOptions = ref([])
+const roleOptionsError = ref('')
+const statusOptions = ref([])
+const statusOptionsError = ref('')
+
+// user detail state: data shown after clicking the "view" button in the table.
+const detailLoading = ref(false)
+const detailError = ref('')
+const selectedUser = ref(null)
+
+// user form state: used by both create and edit actions.
+const saveLoading = ref(false)
+const saveMessage = ref('')
+const editingUserId = ref(null)
 const userForm = reactive({
   username: '',
   nickname: '',
@@ -129,18 +71,55 @@ const userForm = reactive({
   status: 'enabled'
 })
 
-// computed 会根据 editingUserId 自动计算当前是否处于编辑模式。
-const isEditing = computed(() => editingUserId.value !== null)
+// row action loading state: disables only the row currently being changed.
+const deleteLoadingId = ref(null)
+const statusLoadingId = ref(null)
 
-// totalPages 根据总条数和每页数量计算总页数，最少显示 1 页。
-const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagination.size)))
+// searchForm and pagination are sent to GET /api/users as query parameters.
+const searchForm = reactive({
+  keyword: '',
+  role: '',
+  status: ''
+})
+const pagination = reactive({
+  page: 1,
+  size: 5,
+  total: 0
+})
 
-// USER_WRITE_PERMISSION is the permission code for changing user data.
-// It matches backend AuthPermissions.USER_WRITE.
+// role page state: data returned by GET /api/roles.
+const roles = ref([])
+const roleLoading = ref(false)
+const roleError = ref('')
+
+// user:write is the backend permission code for changing user data.
 const USER_WRITE_PERMISSION = 'user:write'
 
-// hasPermission checks whether the current login user owns a permission code.
-// The frontend uses it to control button state, while the backend still does the real security check.
+// isEditing decides whether the user form should create or update a user.
+const isEditing = computed(() => editingUserId.value !== null)
+
+// totalPages keeps pagination display stable even when total is 0.
+const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagination.size)))
+
+// currentMenu is matched from the current browser path and visible menu list.
+const currentMenu = computed(() => {
+  return menus.value.find((menu) => getMenuPath(menu) === route.path) || menus.value[0]
+})
+
+// currentMenuKey is used by the sidebar to highlight the active menu.
+const currentMenuKey = computed(() => {
+  return currentMenu.value ? currentMenu.value.key : 'home'
+})
+
+// canManageUsers controls user create/edit/delete buttons on the frontend.
+const canManageUsers = computed(() => hasPermission(USER_WRITE_PERMISSION))
+
+/**
+ * Check whether the current login user owns a permission code.
+ *
+ * The frontend uses this for button state. The backend still does the real
+ * security check through interceptors.
+ */
 function hasPermission(permissionCode) {
   return Boolean(
     currentUser.value &&
@@ -149,23 +128,52 @@ function hasPermission(permissionCode) {
   )
 }
 
-// canManageUsers controls whether the current login user can change user data.
-// It is calculated from the backend permission list instead of role text.
-const canManageUsers = computed(() => hasPermission(USER_WRITE_PERMISSION))
+/**
+ * Convert route/menu data into a safe path.
+ *
+ * The fallback keeps old hot-reload menu data from breaking router.push.
+ */
+function getMenuPath(menu) {
+  if (menu && menu.path) {
+    return menu.path
+  }
 
-// currentMenu finds the full menu object for the selected key.
-// The fallback keeps the page stable when menus are still loading.
-const currentMenu = computed(() => {
-  return menus.value.find((menu) => menu.key === currentMenuKey.value) || menus.value[0]
-})
+  if (menu && menu.key === 'users') {
+    return '/users'
+  }
 
-// These computed values decide which page blocks should be displayed.
-const isHomePage = computed(() => currentMenuKey.value === 'home')
-const isUsersPage = computed(() => currentMenuKey.value === 'users')
-const isRolesPage = computed(() => currentMenuKey.value === 'roles')
+  if (menu && menu.key === 'roles') {
+    return '/roles'
+  }
+
+  return '/'
+}
 
 /**
- * 请求后端健康检查接口，用来确认前后端是否已经连通。
+ * Keep the browser path inside the current user's visible menu range.
+ */
+function normalizeCurrentMenu() {
+  if (menus.value.length === 0) {
+    router.replace('/')
+    return
+  }
+
+  const exists = menus.value.some((menu) => getMenuPath(menu) === route.path)
+
+  if (!exists) {
+    router.replace(getMenuPath(menus.value[0]))
+  }
+}
+
+/**
+ * Select a sidebar menu and jump to its route path.
+ */
+function selectMenu(menu) {
+  router.push(getMenuPath(menu))
+}
+
+/**
+ * Read the backend health endpoint for the home page.
  */
 async function loadBackendInfo() {
   systemLoading.value = true
@@ -181,9 +189,21 @@ async function loadBackendInfo() {
 }
 
 /**
- * 根据筛选条件和分页参数请求用户列表。
- *
- * URLSearchParams 用来安全拼接查询参数，避免手写字符串时漏掉 ?、& 或编码。
+ * Request sidebar menus visible to the current login user.
+ */
+async function loadMenus() {
+  if (!currentUser.value) {
+    menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
+    normalizeCurrentMenu()
+    return
+  }
+
+  menus.value = await apiGet('/api/auth/menus')
+  normalizeCurrentMenu()
+}
+
+/**
+ * Load users with search conditions and pagination.
  */
 async function loadUsers() {
   userLoading.value = true
@@ -221,10 +241,7 @@ async function loadUsers() {
 }
 
 /**
- * 请求用户统计接口。
- *
- * 统计数据来自 GET /api/users/stats，和分页列表分开请求。
- * 这样当前列表只显示 5 条时，统计卡片仍然能展示全部用户的汇总数字。
+ * Load user statistics cards.
  */
 async function loadUserStats() {
   statsLoading.value = true
@@ -240,10 +257,7 @@ async function loadUserStats() {
 }
 
 /**
- * 请求角色下拉选项。
- *
- * 前端不再把角色选项写死在页面里，而是从 GET /api/users/roles 获取。
- * 这样以后后端调整角色列表时，页面下拉框可以跟着接口返回变化。
+ * Load role select options for search and user forms.
  */
 async function loadRoleOptions() {
   roleOptionsError.value = ''
@@ -256,9 +270,7 @@ async function loadRoleOptions() {
 }
 
 /**
- * 请求状态下拉选项。
- *
- * 状态选项的 value 是 enabled/disabled，label 是页面显示的中文文案。
+ * Load status select options for search and user forms.
  */
 async function loadStatusOptions() {
   statusOptionsError.value = ''
@@ -271,94 +283,29 @@ async function loadStatusOptions() {
 }
 
 /**
- * 查询单个用户详情。
- *
- * 这里故意请求 GET /api/users/{id}，不是直接用表格里的 user，
- * 是为了学习真实后台里“列表数据”和“详情数据”分开查询的写法。
+ * Load role list data for the role management page.
  */
-/**
- * Request sidebar menus visible to the current login user.
- *
- * The backend decides menu visibility, and the frontend only renders the returned list.
- */
-async function loadMenus() {
+async function loadRoles() {
   if (!currentUser.value) {
-    menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
-    syncCurrentMenuWithRoute()
+    roles.value = []
     return
   }
 
-  menus.value = await apiGet('/api/auth/menus')
-  normalizeCurrentMenu()
+  roleLoading.value = true
+  roleError.value = ''
+
+  try {
+    roles.value = await apiGet('/api/roles')
+  } catch (error) {
+    roleError.value = getApiErrorMessage(error, '无法连接角色列表接口，请确认 Java 后端已经启动')
+  } finally {
+    roleLoading.value = false
+  }
 }
 
 /**
- * Keep currentMenuKey pointing to a menu the current user can see.
- *
- * Example: if a non-super-admin user has no "roles" menu, the page should
- * automatically fall back to the first visible menu.
+ * Load a single user detail by id.
  */
-function normalizeCurrentMenu() {
-  if (menus.value.length === 0) {
-    currentMenuKey.value = 'home'
-    router.replace('/')
-    return
-  }
-
-  const exists = menus.value.some((menu) => getMenuPath(menu) === route.path)
-
-  if (!exists) {
-    router.replace(getMenuPath(menus.value[0]))
-    return
-  }
-
-  syncCurrentMenuWithRoute()
-}
-
-/**
- * Select a sidebar menu.
- *
- * router.push changes the browser URL, and the watcher below will then update
- * currentMenuKey from the new route path.
- */
-function selectMenu(menu) {
-  router.push(getMenuPath(menu))
-}
-
-/**
- * Return a usable route path for a menu.
- *
- * This fallback is useful while learning because the browser may still hold old
- * menu data from a previous hot reload where path did not exist yet.
- */
-function getMenuPath(menu) {
-  if (menu && menu.path) {
-    return menu.path
-  }
-
-  if (menu && menu.key === 'users') {
-    return '/users'
-  }
-
-  if (menu && menu.key === 'roles') {
-    return '/roles'
-  }
-
-  return '/'
-}
-
-/**
- * Match the current browser path to a visible menu.
- *
- * Example: when route.path is /users, this method finds the menu whose path is
- * /users and sets currentMenuKey to users.
- */
-function syncCurrentMenuWithRoute() {
-  const matchedMenu = menus.value.find((menu) => getMenuPath(menu) === route.path)
-
-  currentMenuKey.value = matchedMenu ? matchedMenu.key : menus.value[0].key
-}
-
 async function loadUserDetail(id) {
   detailLoading.value = true
   detailError.value = ''
@@ -374,7 +321,7 @@ async function loadUserDetail(id) {
 }
 
 /**
- * 关闭详情面板。
+ * Clear the user detail panel.
  */
 function clearUserDetail() {
   selectedUser.value = null
@@ -382,9 +329,7 @@ function clearUserDetail() {
 }
 
 /**
- * 提交筛选表单。
- *
- * 新筛选条件一般要从第 1 页开始看，所以这里先把 page 重置成 1。
+ * Search from the first page when conditions change.
  */
 function submitSearch() {
   pagination.page = 1
@@ -392,9 +337,7 @@ function submitSearch() {
 }
 
 /**
- * 切换页码。
- *
- * 上一页、下一页都会走这个方法，先限制页码范围，再重新请求列表。
+ * Jump to another page in the user table.
  */
 function goToPage(page) {
   if (page < 1 || page > totalPages.value || userLoading.value) {
@@ -406,9 +349,7 @@ function goToPage(page) {
 }
 
 /**
- * 修改每页数量。
- *
- * 每页数量变了以后，原来的页码可能不存在，所以回到第 1 页重新查询。
+ * Change page size and reload from the first page.
  */
 function changePageSize() {
   pagination.page = 1
@@ -416,39 +357,7 @@ function changePageSize() {
 }
 
 /**
- * Format backend LocalDateTime string for display.
- *
- * Spring Boot returns LocalDateTime like 2026-06-12T16:00:00, and the page
- * displays it as a local date time string that is easier to read.
- */
-function formatDateTime(value) {
-  if (!value) {
-    return '-'
-  }
-
-  return new Date(value).toLocaleString()
-}
-
-/**
- * Convert a status value to display label.
- *
- * The table/detail only store enabled/disabled, so the label is read from
- * statusOptions when available. The fallback keeps the page readable before the API returns.
- */
-function getStatusLabel(status) {
-  const matchedStatus = statusOptions.value.find((option) => option.value === status)
-
-  if (matchedStatus) {
-    return matchedStatus.label
-  }
-
-  return status === 'enabled' ? '启用' : '禁用'
-}
-
-/**
- * 把请求错误转换成页面上展示的文字。
- *
- * ApiError 表示后端正常返回了业务错误，比如校验失败；其它错误通常是网络、代理或后端未启动。
+ * Convert request errors into page messages.
  */
 function getApiErrorMessage(error, networkMessage) {
   if (error && error.name === 'ApiError') {
@@ -459,9 +368,7 @@ function getApiErrorMessage(error, networkMessage) {
 }
 
 /**
- * Submit login form.
- *
- * The backend returns basic user information after username/password are correct.
+ * Login and then load protected page data.
  */
 async function login() {
   loginLoading.value = true
@@ -470,7 +377,7 @@ async function login() {
   try {
     currentUser.value = await apiPost('/api/auth/login', loginForm)
     saveStoredLoginUser(currentUser.value)
-    await Promise.all([loadMenus(), loadRoleOptions(), loadStatusOptions(), refreshUserData()])
+    await loadProtectedData()
   } catch (error) {
     loginError.value = getApiErrorMessage(error, '登录请求失败，请确认 Java 后端已经启动')
   } finally {
@@ -479,10 +386,7 @@ async function login() {
 }
 
 /**
- * Clear current login user.
- *
- * This learning step only stores login state in memory. Refreshing the browser
- * will clear it, and later we will learn token/localStorage persistence.
+ * Logout from backend and clear frontend protected data.
  */
 async function logout() {
   try {
@@ -496,12 +400,7 @@ async function logout() {
 }
 
 /**
- * 把登录用户保存到 localStorage。
- *
- * localStorage 里的数据刷新页面后还在，所以可以用它恢复登录状态。
- */
-/**
- * 页面打开时从 localStorage 恢复登录用户。
+ * Restore login state from localStorage and verify it with GET /api/auth/me.
  */
 async function restoreLoginUser() {
   const savedUser = getStoredLoginUser()
@@ -526,32 +425,28 @@ async function restoreLoginUser() {
 }
 
 /**
- * 提交用户表单。
- *
- * 新增模式：POST /api/users
- * 编辑模式：PUT /api/users/{id}
- */
-/**
- * 清空需要登录后才能查看的数据。
- *
- * 退出登录后，旧的用户列表和统计数据不应该继续留在页面上。
+ * Clear data that should only be visible after login.
  */
 function clearProtectedData() {
   users.value = []
   userStats.value = null
   roleOptions.value = []
   statusOptions.value = []
+  roles.value = []
   menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
-  router.replace('/')
-  syncCurrentMenuWithRoute()
   selectedUser.value = null
   userError.value = ''
   statsError.value = ''
   roleOptionsError.value = ''
   statusOptionsError.value = ''
   detailError.value = ''
+  roleError.value = ''
+  router.replace('/')
 }
 
+/**
+ * Save a user in create or edit mode.
+ */
 async function saveUser() {
   if (!canManageUsers.value) {
     userError.value = '当前账号没有操作权限'
@@ -565,9 +460,7 @@ async function saveUser() {
   const url = isEditing.value ? `/api/users/${editingUserId.value}` : '/api/users'
 
   try {
-    const savedUser = isEditing.value
-      ? await apiPut(url, userForm)
-      : await apiPost(url, userForm)
+    const savedUser = isEditing.value ? await apiPut(url, userForm) : await apiPost(url, userForm)
 
     saveMessage.value = isEditing.value
       ? `已更新用户：${savedUser.nickname}`
@@ -587,9 +480,7 @@ async function saveUser() {
 }
 
 /**
- * 删除用户。
- *
- * 删除当前页最后一条数据后，当前页可能变空，所以会自动回到上一页再查一次。
+ * Delete a user and refresh the current page.
  */
 async function deleteUser(user) {
   if (!canManageUsers.value) {
@@ -633,9 +524,7 @@ async function deleteUser(user) {
 }
 
 /**
- * 启用或禁用用户。
- *
- * 这里使用 PATCH /api/users/{id}/status，因为只修改 status 一个字段。
+ * Enable or disable a user by PATCH /api/users/{id}/status.
  */
 async function changeUserStatus(user) {
   if (!canManageUsers.value) {
@@ -675,7 +564,7 @@ async function changeUserStatus(user) {
 }
 
 /**
- * 点击表格“编辑”按钮时，把当前行数据填回表单。
+ * Put the selected row into the edit form.
  */
 function startEdit(user) {
   if (!canManageUsers.value) {
@@ -693,7 +582,7 @@ function startEdit(user) {
 }
 
 /**
- * 清空筛选条件，并回到第 1 页重新请求用户列表。
+ * Clear search fields and reload the first page.
  */
 function resetSearch() {
   searchForm.keyword = ''
@@ -704,7 +593,7 @@ function resetSearch() {
 }
 
 /**
- * 重置表单，让页面回到新增用户模式。
+ * Reset the user form to create mode.
  */
 function resetForm() {
   editingUserId.value = null
@@ -715,7 +604,7 @@ function resetForm() {
 }
 
 /**
- * 同时刷新用户统计和用户列表。
+ * Refresh the user table and statistics together.
  */
 function refreshUserData() {
   if (!currentUser.value) {
@@ -727,7 +616,14 @@ function refreshUserData() {
 }
 
 /**
- * 同时刷新系统状态和用户列表。
+ * Load data that requires a login token.
+ */
+function loadProtectedData() {
+  return Promise.all([loadMenus(), loadRoleOptions(), loadStatusOptions(), loadRoles(), refreshUserData()])
+}
+
+/**
+ * Refresh the current page and shared data.
  */
 function refreshPageData() {
   if (!currentUser.value) {
@@ -735,7 +631,7 @@ function refreshPageData() {
     return Promise.all([loadBackendInfo()])
   }
 
-  return Promise.all([loadBackendInfo(), loadMenus(), loadRoleOptions(), loadStatusOptions(), refreshUserData()])
+  return Promise.all([loadBackendInfo(), loadProtectedData()])
 }
 
 onMounted(async () => {
@@ -743,8 +639,7 @@ onMounted(async () => {
   await refreshPageData()
 })
 
-// Keep menu highlight and page content synchronized with the browser URL.
-// This also makes manual address changes, such as typing /users, update the page.
+// When the address changes manually, keep it inside visible menu permissions.
 watch(
   () => route.path,
   () => {
@@ -774,7 +669,7 @@ watch(
     <section class="content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">{{ currentMenu ? currentMenu.path : '/' }}</p>
+          <p class="eyebrow">{{ currentMenu ? getMenuPath(currentMenu) : '/' }}</p>
           <h1>{{ currentMenu ? currentMenu.label : '系统首页' }}</h1>
         </div>
         <button class="refresh-button" type="button" @click="refreshPageData">
@@ -823,378 +718,52 @@ watch(
         </p>
       </section>
 
-      <section v-if="isHomePage" class="panel status-panel">
-        <h2>后端连接状态</h2>
-
-        <p v-if="systemLoading" class="status muted">正在请求系统接口...</p>
-
-        <p v-else-if="systemError" class="status error">
-          {{ systemError }}
-        </p>
-
-        <div v-else-if="backendInfo" class="result">
-          <p class="status success">{{ backendInfo.message }}</p>
-          <dl>
-            <dt>接口模块</dt>
-            <dd>{{ backendInfo.module }}</dd>
-          </dl>
-        </div>
-      </section>
-
-      <section v-if="isUsersPage" class="panel stats-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">GET /api/users/stats</p>
-            <h2>用户统计</h2>
-          </div>
-          <button class="secondary-button" type="button" @click="loadUserStats">
-            刷新统计
-          </button>
-        </div>
-
-        <p v-if="statsLoading" class="status muted">正在请求用户统计...</p>
-
-        <p v-else-if="statsError" class="status error">
-          {{ statsError }}
-        </p>
-
-        <div v-else-if="userStats" class="stats-grid">
-          <div class="stats-item">
-            <span>用户总数</span>
-            <strong>{{ userStats.totalCount }}</strong>
-          </div>
-          <div class="stats-item">
-            <span>启用用户</span>
-            <strong>{{ userStats.enabledCount }}</strong>
-          </div>
-          <div class="stats-item">
-            <span>禁用用户</span>
-            <strong>{{ userStats.disabledCount }}</strong>
-          </div>
-          <div class="stats-item">
-            <span>超级管理员</span>
-            <strong>{{ userStats.superAdminCount }}</strong>
-          </div>
-          <div class="stats-item">
-            <span>运营管理员</span>
-            <strong>{{ userStats.operatorCount }}</strong>
-          </div>
-          <div class="stats-item">
-            <span>只读用户</span>
-            <strong>{{ userStats.readonlyCount }}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section v-if="isUsersPage" class="panel detail-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">GET /api/users/{id}</p>
-            <h2>用户详情</h2>
-          </div>
-          <button
-            v-if="selectedUser || detailError"
-            class="secondary-button"
-            type="button"
-            @click="clearUserDetail"
-          >
-            关闭详情
-          </button>
-        </div>
-
-        <p v-if="detailLoading" class="status muted">正在请求用户详情...</p>
-
-        <p v-else-if="detailError" class="status error">
-          {{ detailError }}
-        </p>
-
-        <div v-else-if="selectedUser" class="detail-grid">
-          <dl>
-            <dt>ID</dt>
-            <dd>{{ selectedUser.id }}</dd>
-            <dt>账号</dt>
-            <dd>{{ selectedUser.username }}</dd>
-            <dt>昵称</dt>
-            <dd>{{ selectedUser.nickname }}</dd>
-            <dt>角色</dt>
-            <dd>{{ selectedUser.role }}</dd>
-            <dt>状态</dt>
-            <dd>
-              <span class="badge" :class="selectedUser.status">
-                {{ getStatusLabel(selectedUser.status) }}
-              </span>
-            </dd>
-            <dt>创建时间</dt>
-            <dd>{{ formatDateTime(selectedUser.createdAt) }}</dd>
-            <dt>更新时间</dt>
-            <dd>{{ formatDateTime(selectedUser.updatedAt) }}</dd>
-          </dl>
-        </div>
-
-        <p v-else class="status muted">点击表格里的“查看”，这里会显示单个用户详情。</p>
-      </section>
-
-      <section v-if="isUsersPage" class="panel search-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">GET /api/users?keyword=&role=&status=&page=&size=</p>
-            <h2>筛选用户</h2>
-          </div>
-        </div>
-
-        <form class="search-form" @submit.prevent="submitSearch">
-          <label>
-            <span>关键字</span>
-            <input v-model="searchForm.keyword" placeholder="账号或昵称" />
-          </label>
-
-          <label>
-            <span>状态</span>
-            <select v-model="searchForm.status">
-              <option value="">全部状态</option>
-              <option
-                v-for="status in statusOptions"
-                :key="status.value"
-                :value="status.value"
-              >
-                {{ status.label }}
-              </option>
-            </select>
-          </label>
-
-          <label>
-            <span>角色</span>
-            <select v-model="searchForm.role">
-              <option value="">全部角色</option>
-              <option
-                v-for="role in roleOptions"
-                :key="role.value"
-                :value="role.value"
-              >
-                {{ role.label }}
-              </option>
-            </select>
-          </label>
-
-          <label>
-            <span>每页数量</span>
-            <select v-model.number="pagination.size" @change="changePageSize">
-              <option :value="5">5 条</option>
-              <option :value="10">10 条</option>
-              <option :value="20">20 条</option>
-            </select>
-          </label>
-
-          <button class="submit-button" type="submit" :disabled="userLoading">
-            {{ userLoading ? '查询中...' : '查询' }}
-          </button>
-
-          <button class="secondary-button" type="button" @click="resetSearch">
-            重置
-          </button>
-        </form>
-      </section>
-
-      <section v-if="isUsersPage" class="panel form-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">
-              {{ isEditing ? `PUT /api/users/${editingUserId}` : 'POST /api/users' }}
-            </p>
-            <h2>{{ isEditing ? '编辑用户' : '新增用户' }}</h2>
-          </div>
-          <button
-            v-if="isEditing"
-            class="secondary-button"
-            type="button"
-            @click="resetForm"
-          >
-            取消编辑
-          </button>
-        </div>
-
-        <form class="user-form" @submit.prevent="saveUser">
-          <label>
-            <span>账号</span>
-            <input v-model="userForm.username" placeholder="唯一账号，例如 zhangsan" />
-          </label>
-
-          <label>
-            <span>昵称</span>
-            <input v-model="userForm.nickname" placeholder="例如 张三" />
-          </label>
-
-          <label>
-            <span>角色</span>
-            <select v-model="userForm.role">
-              <option
-                v-for="role in roleOptions"
-                :key="role.value"
-                :value="role.value"
-              >
-                {{ role.label }}
-              </option>
-            </select>
-          </label>
-
-          <label>
-            <span>状态</span>
-            <select v-model="userForm.status">
-              <option
-                v-for="status in statusOptions"
-                :key="status.value"
-                :value="status.value"
-              >
-                {{ status.label }}
-              </option>
-            </select>
-          </label>
-
-          <button class="submit-button" type="submit" :disabled="saveLoading || !canManageUsers">
-            {{ saveLoading ? '提交中...' : isEditing ? '保存修改' : '新增用户' }}
-          </button>
-        </form>
-
-        <p v-if="saveMessage" class="status success form-message">
-          {{ saveMessage }}
-        </p>
-
-        <p v-if="roleOptionsError" class="status error form-message">
-          {{ roleOptionsError }}
-        </p>
-
-        <p v-if="statusOptionsError" class="status error form-message">
-          {{ statusOptionsError }}
-        </p>
-      </section>
-
-      <section v-if="isUsersPage" class="panel table-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">GET / POST / PUT / PATCH / DELETE</p>
-            <h2>用户管理</h2>
-          </div>
-          <button class="secondary-button" type="button" @click="loadUsers">
-            刷新用户
-          </button>
-        </div>
-
-        <p v-if="userLoading" class="status muted">正在请求用户列表...</p>
-
-        <p v-else-if="userError" class="status error">
-          {{ userError }}
-        </p>
-
-        <div v-else>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>账号</th>
-                  <th>昵称</th>
-                  <th>角色</th>
-                  <th>状态</th>
-                  <th>更新时间</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="user in users" :key="user.id">
-                  <td>{{ user.id }}</td>
-                  <td>{{ user.username }}</td>
-                  <td>{{ user.nickname }}</td>
-                  <td>{{ user.role }}</td>
-                  <td>
-                    <span class="badge" :class="user.status">
-                      {{ getStatusLabel(user.status) }}
-                    </span>
-                  </td>
-                  <td>{{ formatDateTime(user.updatedAt) }}</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="link-button" type="button" @click="loadUserDetail(user.id)">
-                        查看
-                      </button>
-                      <button
-                        class="link-button"
-                        type="button"
-                        :disabled="!canManageUsers"
-                        @click="startEdit(user)"
-                      >
-                        编辑
-                      </button>
-                      <button
-                        class="link-button"
-                        type="button"
-                        :disabled="statusLoadingId === user.id || !canManageUsers"
-                        @click="changeUserStatus(user)"
-                      >
-                        {{
-                          statusLoadingId === user.id
-                            ? '处理中...'
-                            : user.status === 'enabled'
-                              ? '禁用'
-                              : '启用'
-                        }}
-                      </button>
-                      <button
-                        class="danger-link-button"
-                        type="button"
-                        :disabled="deleteLoadingId === user.id || !canManageUsers"
-                        @click="deleteUser(user)"
-                      >
-                        {{ deleteLoadingId === user.id ? '删除中...' : '删除' }}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr v-if="users.length === 0">
-                  <td class="empty-cell" colspan="6">没有匹配的用户</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="pagination-bar">
-            <span>
-              共 {{ pagination.total }} 条，第 {{ pagination.page }} / {{ totalPages }} 页
-            </span>
-            <div class="pagination-actions">
-              <button
-                class="secondary-button"
-                type="button"
-                :disabled="pagination.page <= 1 || userLoading"
-                @click="goToPage(pagination.page - 1)"
-              >
-                上一页
-              </button>
-              <button
-                class="secondary-button"
-                type="button"
-                :disabled="pagination.page >= totalPages || userLoading"
-                @click="goToPage(pagination.page + 1)"
-              >
-                下一页
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section v-if="isRolesPage" class="panel roles-panel">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">GET /api/auth/menus</p>
-            <h2>角色管理</h2>
-          </div>
-        </div>
-
-        <p class="status muted">
-          当前只先开放角色管理菜单入口，真实的角色列表、角色新增和角色权限分配会在后续步骤继续完成。
-        </p>
-      </section>
+      <RouterView
+        :system-loading="systemLoading"
+        :system-error="systemError"
+        :backend-info="backendInfo"
+        :stats-loading="statsLoading"
+        :stats-error="statsError"
+        :user-stats="userStats"
+        :detail-loading="detailLoading"
+        :detail-error="detailError"
+        :selected-user="selectedUser"
+        :search-form="searchForm"
+        :role-options="roleOptions"
+        :status-options="statusOptions"
+        :pagination="pagination"
+        :user-form="userForm"
+        :is-editing="isEditing"
+        :editing-user-id="editingUserId"
+        :save-loading="saveLoading"
+        :can-manage-users="canManageUsers"
+        :save-message="saveMessage"
+        :role-options-error="roleOptionsError"
+        :status-options-error="statusOptionsError"
+        :user-loading="userLoading"
+        :user-error="userError"
+        :users="users"
+        :delete-loading-id="deleteLoadingId"
+        :status-loading-id="statusLoadingId"
+        :total-pages="totalPages"
+        :role-loading="roleLoading"
+        :role-error="roleError"
+        :roles="roles"
+        @load-user-stats="loadUserStats"
+        @clear-user-detail="clearUserDetail"
+        @submit-search="submitSearch"
+        @change-page-size="changePageSize"
+        @reset-search="resetSearch"
+        @reset-form="resetForm"
+        @save-user="saveUser"
+        @load-users="loadUsers"
+        @load-user-detail="loadUserDetail"
+        @start-edit="startEdit"
+        @change-user-status="changeUserStatus"
+        @delete-user="deleteUser"
+        @go-to-page="goToPage"
+        @load-roles="loadRoles"
+      />
     </section>
   </main>
 </template>

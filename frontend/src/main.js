@@ -1,21 +1,19 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
+import HomePage from './pages/HomePage.vue'
+import RolesPage from './pages/RolesPage.vue'
+import UsersPage from './pages/UsersPage.vue'
 import './style.css'
-
-// EmptyPage is only a route placeholder.
-// The current learning project still renders page blocks inside App.vue, while
-// Vue Router is first used to keep the browser address in sync with menu clicks.
-const EmptyPage = { template: '<div></div>' }
 
 // router defines the frontend paths that can appear in the browser address bar.
 // createWebHistory() means the URL looks like /users instead of /#/users.
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: EmptyPage },
-    { path: '/users', component: EmptyPage },
-    { path: '/roles', component: EmptyPage },
+    { path: '/', component: HomePage },
+    { path: '/users', component: UsersPage },
+    { path: '/roles', component: RolesPage },
     { path: '/:pathMatch(.*)*', redirect: '/' }
   ]
 })

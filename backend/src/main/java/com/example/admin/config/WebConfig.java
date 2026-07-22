@@ -43,6 +43,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns(
                         "/api/users",
                         "/api/users/**",
+                        "/api/roles",
+                        "/api/roles/**",
                         "/api/auth/me",
                         "/api/auth/menus",
                         "/api/auth/logout"
