@@ -1882,3 +1882,38 @@ http://localhost:5173
 - `403`：已经登录，但权限不够。
 - `registry.addInterceptor(...).addPathPatterns("/api/roles", "/api/roles/**")`：把拦截器绑定到角色管理相关接口。
 - `AuthPermissions.canManageRoles()`：把权限判断封装成方法，避免到处写 `permissions.contains("role:manage")`。
+
+### 补全第 2 到第 5 点：角色编码、按钮权限、错误处理和筛选分页
+
+目标：把前面已经学过的用户角色、按钮权限、错误提示、筛选分页补到更接近真实项目的形态。
+
+为什么要做这一步：
+
+- 用户表只存中文角色名不够稳定，如果以后把“运营管理员”改名成“运营专员”，登录权限可能找不到对应角色。
+- 更规范的做法是保存稳定的 `roleCode`，例如 `operator`，页面展示时再显示角色名称。
+- 前端按钮权限要和后端权限一致，避免用户看到自己不能操作的按钮。
+- 错误处理集中在 `api.js`，页面代码不用每个接口都重复判断 HTTP 状态和业务 code。
+- 筛选分页是后台列表的基础能力，需要后端兜底处理异常参数，不能只靠前端传正确值。
+
+这一 新增或修改了什么：
+
+- `UserEntity.java`：新增 `roleCode` 字段，对应数据库列 `role_code`。
+- `CreateUserDTO.java` / `UpdateUserDTO.java`：把用户表单提交字段从角色名称改成 `roleCode`。
+- `UserService.java`：角色选项从 `sys_role` 表读取；新增/编辑用户时根据 `roleCode` 查询角色，再保存角色编码和角色名称。
+- `UserRepository.java`：用户列表筛选和统计改为按 `roleCode` 查询。
+- `UserSchemaInitializer.java` / `UserDataInitializer.java`：给旧 H2 数据库补 `role_code`，并把旧中文角色名迁移成稳定角色编码。
+- `AuthService.java` / `AuthTokenService.java` / `LoginVO.java`：登录权限改为按 `roleCode` 查询角色；登录返回和 `/api/auth/me` 都包含 `roleCode`。
+- `App.vue` / `UsersPage.vue`：用户筛选和用户表单改为提交 `roleCode`，展示仍然使用中文 `role`。
+- `App.vue` / `RolesPage.vue`：新增前端 `role:manage` 按钮级权限控制。
+- `api.js`：`ApiError` 增加 `code` 和 `status`，并能处理非 200 HTTP 响应和非标准 JSON。
+- `UserControllerTest.java`：新增 `roleCode + page + size` 组合筛选分页测试。
+
+你需要理解：
+
+- `roleCode`：给程序用，稳定，例如 `operator`。
+- `role`：给用户看，可改名，例如“运营管理员”。
+- `GET /api/users/roles`：现在从角色表读取选项，返回 `{ value: code, label: name }`。
+- `POST /api/users`：前端提交 `roleCode`，后端查角色表后保存 `roleCode` 和 `role`。
+- `ApiError.status`：HTTP 状态，例如 401、403。
+- `ApiError.code`：后端统一响应里的业务 code。
+- `size = Math.min(size, 50)`：后端限制每页最大数量，防止前端一次请求过多数据。

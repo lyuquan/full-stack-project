@@ -50,6 +50,7 @@ public class AuthTokenService {
                 user.getId(),
                 user.getUsername(),
                 user.getNickname(),
+                user.getRoleCode(),
                 user.getRole(),
                 permissions,
                 AuthPermissions.canManageUsers(permissions)
@@ -128,16 +129,19 @@ public class AuthTokenService {
 
         private final String nickname;
 
+        private final String roleCode;
+
         private final String role;
 
         private final List<String> permissions;
 
         private final Boolean canManageUsers;
 
-        public LoginUser(Long id, String username, String nickname, String role, List<String> permissions, Boolean canManageUsers) {
+        public LoginUser(Long id, String username, String nickname, String roleCode, String role, List<String> permissions, Boolean canManageUsers) {
             this.id = id;
             this.username = username;
             this.nickname = nickname;
+            this.roleCode = roleCode;
             this.role = role;
             this.permissions = permissions;
             this.canManageUsers = canManageUsers;
@@ -153,6 +157,10 @@ public class AuthTokenService {
 
         public String getNickname() {
             return nickname;
+        }
+
+        public String getRoleCode() {
+            return roleCode;
         }
 
         public String getRole() {

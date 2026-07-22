@@ -44,20 +44,21 @@ public class UserDataInitializer implements CommandLineRunner {
         }
 
         userRepository.saveAll(Arrays.asList(
-                createUser("admin", "系统管理员", UserConstants.ROLE_SUPER_ADMIN, UserConstants.STATUS_ENABLED),
-                createUser("manager", "运营经理", UserConstants.ROLE_OPERATOR, UserConstants.STATUS_ENABLED),
-                createUser("auditor", "审计专员", UserConstants.ROLE_READONLY, UserConstants.STATUS_DISABLED)
+                createUser("admin", "系统管理员", UserConstants.ROLE_CODE_SUPER_ADMIN, UserConstants.ROLE_SUPER_ADMIN, UserConstants.STATUS_ENABLED),
+                createUser("manager", "运营经理", UserConstants.ROLE_CODE_OPERATOR, UserConstants.ROLE_OPERATOR, UserConstants.STATUS_ENABLED),
+                createUser("auditor", "审计专员", UserConstants.ROLE_CODE_READONLY, UserConstants.ROLE_READONLY, UserConstants.STATUS_DISABLED)
         ));
     }
 
     /**
      * Creates a UserEntity object for initial demo data.
      */
-    private UserEntity createUser(String username, String nickname, String role, String status) {
+    private UserEntity createUser(String username, String nickname, String roleCode, String role, String status) {
         UserEntity user = new UserEntity();
         user.setUsername(username);
         user.setNickname(nickname);
         user.setPassword(passwordEncoder.encode("123456"));
+        user.setRoleCode(roleCode);
         user.setRole(role);
         user.setStatus(status);
         return user;
@@ -76,6 +77,26 @@ public class UserDataInitializer implements CommandLineRunner {
                 user.setPassword(passwordEncoder.encode("123456"));
                 userRepository.save(user);
             }
+
+            if (user.getRoleCode() == null || user.getRoleCode().trim().isEmpty()) {
+                user.setRoleCode(toRoleCode(user.getRole()));
+                userRepository.save(user);
+            }
         }
+    }
+
+    /**
+     * Converts old role names to stable role codes.
+     */
+    private String toRoleCode(String role) {
+        if (UserConstants.ROLE_SUPER_ADMIN.equals(role)) {
+            return UserConstants.ROLE_CODE_SUPER_ADMIN;
+        }
+
+        if (UserConstants.ROLE_READONLY.equals(role)) {
+            return UserConstants.ROLE_CODE_READONLY;
+        }
+
+        return UserConstants.ROLE_CODE_OPERATOR;
     }
 }

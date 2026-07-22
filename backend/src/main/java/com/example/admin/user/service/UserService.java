@@ -2,6 +2,8 @@ package com.example.admin.user.service;
 
 import com.example.admin.common.PageResult;
 import com.example.admin.common.BusinessException;
+import com.example.admin.role.entity.RoleEntity;
+import com.example.admin.role.repository.RoleRepository;
 import com.example.admin.user.constant.UserConstants;
 import com.example.admin.user.dto.CreateUserDTO;
 import com.example.admin.user.dto.UpdateUserDTO;
@@ -35,6 +37,11 @@ public class UserService {
     private final UserRepository userRepository;
 
     /**
+     * RoleRepository is used to read selectable roles from sys_role.
+     */
+    private final RoleRepository roleRepository;
+
+    /**
      * BCrypt 密码工具，用来把新用户默认密码保存成密文。
      */
     private final BCryptPasswordEncoder passwordEncoder;
@@ -42,8 +49,9 @@ public class UserService {
     /**
      * Constructor injection makes required dependencies clear.
      */
-    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -52,9 +60,11 @@ public class UserService {
      *
      * The frontend page starts from 1, but Spring Data JPA page index starts from 0.
      */
-    public PageResult<UserVO> listUsers(String keyword, String role, String status, Integer page, Integer size) {
+    public PageResult<UserVO> listUsers(String keyword, String roleCode, String status, Integer page, Integer size) {
         int safePage = page == null || page < 1 ? 1 : page;
         int safeSize = size == null || size < 1 ? 5 : size;
+        safeSize = Math.min(safeSize, 50);
+        String safeKeyword = keyword == null ? null : keyword.trim();
 
         Pageable pageable = PageRequest.of(
                 safePage - 1,
@@ -62,7 +72,7 @@ public class UserService {
                 Sort.by(Sort.Direction.ASC, "id")
         );
 
-        Page<UserEntity> entityPage = userRepository.searchUsers(keyword, role, status, pageable);
+        Page<UserEntity> entityPage = userRepository.searchUsers(safeKeyword, roleCode, status, pageable);
         List<UserVO> users = new ArrayList<UserVO>();
 
         for (UserEntity entity : entityPage.getContent()) {
@@ -102,9 +112,9 @@ public class UserService {
         long totalCount = userRepository.count();
         long enabledCount = userRepository.countByStatus(UserConstants.STATUS_ENABLED);
         long disabledCount = userRepository.countByStatus(UserConstants.STATUS_DISABLED);
-        long superAdminCount = userRepository.countByRole(UserConstants.ROLE_SUPER_ADMIN);
-        long operatorCount = userRepository.countByRole(UserConstants.ROLE_OPERATOR);
-        long readonlyCount = userRepository.countByRole(UserConstants.ROLE_READONLY);
+        long superAdminCount = userRepository.countByRoleCode(UserConstants.ROLE_CODE_SUPER_ADMIN);
+        long operatorCount = userRepository.countByRoleCode(UserConstants.ROLE_CODE_OPERATOR);
+        long readonlyCount = userRepository.countByRoleCode(UserConstants.ROLE_CODE_READONLY);
 
         return new UserStatsVO(
                 totalCount,
@@ -119,14 +129,15 @@ public class UserService {
     /**
      * Query role options used by frontend select boxes.
      *
-     * For now the roles are fixed in code. Later, when we learn role management,
-     * this method can be changed to read options from a role table.
+     * The value submitted by the frontend is role code. The label shown on the
+     * page is role name.
      */
     public List<OptionVO> listRoleOptions() {
         List<OptionVO> roles = new ArrayList<OptionVO>();
-        roles.add(new OptionVO(UserConstants.ROLE_SUPER_ADMIN, UserConstants.ROLE_SUPER_ADMIN));
-        roles.add(new OptionVO(UserConstants.ROLE_OPERATOR, UserConstants.ROLE_OPERATOR));
-        roles.add(new OptionVO(UserConstants.ROLE_READONLY, UserConstants.ROLE_READONLY));
+
+        for (RoleEntity role : roleRepository.findAllByOrderByIdAsc()) {
+            roles.add(new OptionVO(role.getCode(), role.getName()));
+        }
 
         return roles;
     }
@@ -154,7 +165,9 @@ public class UserService {
         entity.setUsername(createUserDTO.getUsername());
         entity.setNickname(createUserDTO.getNickname());
         entity.setPassword(passwordEncoder.encode("123456"));
-        entity.setRole(createUserDTO.getRole());
+        RoleEntity role = getRoleOrThrow(createUserDTO.getRoleCode());
+        entity.setRoleCode(role.getCode());
+        entity.setRole(role.getName());
         entity.setStatus(createUserDTO.getStatus());
 
         UserEntity savedEntity = userRepository.save(entity);
@@ -177,7 +190,9 @@ public class UserService {
         UserEntity entity = optionalUser.get();
         entity.setUsername(updateUserDTO.getUsername());
         entity.setNickname(updateUserDTO.getNickname());
-        entity.setRole(updateUserDTO.getRole());
+        RoleEntity role = getRoleOrThrow(updateUserDTO.getRoleCode());
+        entity.setRoleCode(role.getCode());
+        entity.setRole(role.getName());
         entity.setStatus(updateUserDTO.getStatus());
 
         UserEntity savedEntity = userRepository.save(entity);
@@ -229,6 +244,7 @@ public class UserService {
                 entity.getId(),
                 entity.getUsername(),
                 entity.getNickname(),
+                entity.getRoleCode(),
                 entity.getRole(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
@@ -257,5 +273,21 @@ public class UserService {
         if (userRepository.existsByUsernameAndIdNot(username, currentUserId)) {
             throw new BusinessException(400, "账号已存在");
         }
+    }
+
+    /**
+     * Query the selected role by code.
+     *
+     * Frontend options come from sys_role, but backend still validates the code
+     * because API clients can send arbitrary JSON.
+     */
+    private RoleEntity getRoleOrThrow(String roleCode) {
+        Optional<RoleEntity> optionalRole = roleRepository.findByCode(roleCode);
+
+        if (!optionalRole.isPresent()) {
+            throw new BusinessException(400, "角色不存在");
+        }
+
+        return optionalRole.get();
     }
 }

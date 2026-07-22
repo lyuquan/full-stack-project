@@ -67,7 +67,7 @@ const editingUserId = ref(null)
 const userForm = reactive({
   username: '',
   nickname: '',
-  role: '运营管理员',
+  roleCode: 'operator',
   status: 'enabled'
 })
 
@@ -78,7 +78,7 @@ const statusLoadingId = ref(null)
 // searchForm and pagination are sent to GET /api/users as query parameters.
 const searchForm = reactive({
   keyword: '',
-  role: '',
+  roleCode: '',
   status: ''
 })
 const pagination = reactive({
@@ -119,6 +119,9 @@ const rolePermissionSaveLoading = ref(false)
 // user:write is the backend permission code for changing user data.
 const USER_WRITE_PERMISSION = 'user:write'
 
+// role:manage is the backend permission code for role management APIs.
+const ROLE_MANAGE_PERMISSION = 'role:manage'
+
 // isEditing decides whether the user form should create or update a user.
 const isEditing = computed(() => editingUserId.value !== null)
 
@@ -140,6 +143,9 @@ const currentMenuKey = computed(() => {
 
 // canManageUsers controls user create/edit/delete buttons on the frontend.
 const canManageUsers = computed(() => hasPermission(USER_WRITE_PERMISSION))
+
+// canManageRoles controls role management buttons on the frontend.
+const canManageRoles = computed(() => hasPermission(ROLE_MANAGE_PERMISSION))
 
 /**
  * Check whether the current login user owns a permission code.
@@ -242,8 +248,8 @@ async function loadUsers() {
     params.set('keyword', searchForm.keyword.trim())
   }
 
-  if (searchForm.role) {
-    params.set('role', searchForm.role)
+  if (searchForm.roleCode) {
+    params.set('roleCode', searchForm.roleCode)
   }
 
   if (searchForm.status) {
@@ -562,6 +568,12 @@ function changePageSize() {
  */
 function getApiErrorMessage(error, networkMessage) {
   if (error && error.name === 'ApiError') {
+    if (error.status === 401) {
+      currentUser.value = null
+      clearStoredLoginUser()
+      clearProtectedData()
+    }
+
     return error.message
   }
 
@@ -665,9 +677,15 @@ async function saveUser() {
   userError.value = ''
 
   const url = isEditing.value ? `/api/users/${editingUserId.value}` : '/api/users'
+  const payload = {
+    username: userForm.username,
+    nickname: userForm.nickname,
+    roleCode: userForm.roleCode,
+    status: userForm.status
+  }
 
   try {
-    const savedUser = isEditing.value ? await apiPut(url, userForm) : await apiPost(url, userForm)
+    const savedUser = isEditing.value ? await apiPut(url, payload) : await apiPost(url, payload)
 
     saveMessage.value = isEditing.value
       ? `已更新用户：${savedUser.nickname}`
@@ -784,7 +802,7 @@ function startEdit(user) {
   userError.value = ''
   userForm.username = user.username
   userForm.nickname = user.nickname
-  userForm.role = user.role
+  userForm.roleCode = user.roleCode
   userForm.status = user.status
 }
 
@@ -793,7 +811,7 @@ function startEdit(user) {
  */
 function resetSearch() {
   searchForm.keyword = ''
-  searchForm.role = ''
+  searchForm.roleCode = ''
   searchForm.status = ''
   pagination.page = 1
   loadUsers()
@@ -806,7 +824,7 @@ function resetForm() {
   editingUserId.value = null
   userForm.username = ''
   userForm.nickname = ''
-  userForm.role = '运营管理员'
+  userForm.roleCode = 'operator'
   userForm.status = 'enabled'
 }
 
@@ -951,6 +969,7 @@ watch(
         :editing-user-id="editingUserId"
         :save-loading="saveLoading"
         :can-manage-users="canManageUsers"
+        :can-manage-roles="canManageRoles"
         :save-message="saveMessage"
         :role-options-error="roleOptionsError"
         :status-options-error="statusOptionsError"

@@ -71,9 +71,30 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data", hasSize(3)))
-                .andExpect(jsonPath("$.data[0].value", is(UserConstants.ROLE_SUPER_ADMIN)))
-                .andExpect(jsonPath("$.data[1].value", is(UserConstants.ROLE_OPERATOR)))
-                .andExpect(jsonPath("$.data[2].value", is(UserConstants.ROLE_READONLY)));
+                .andExpect(jsonPath("$.data[0].value", is(UserConstants.ROLE_CODE_SUPER_ADMIN)))
+                .andExpect(jsonPath("$.data[0].label", is(UserConstants.ROLE_SUPER_ADMIN)))
+                .andExpect(jsonPath("$.data[1].value", is(UserConstants.ROLE_CODE_OPERATOR)))
+                .andExpect(jsonPath("$.data[1].label", is(UserConstants.ROLE_OPERATOR)))
+                .andExpect(jsonPath("$.data[2].value", is(UserConstants.ROLE_CODE_READONLY)))
+                .andExpect(jsonPath("$.data[2].label", is(UserConstants.ROLE_READONLY)));
+    }
+
+    /**
+     * User list supports combined role-code filtering and pagination.
+     */
+    @Test
+    void listUsersShouldFilterByRoleCodeAndPaginate() throws Exception {
+        mockMvc.perform(get("/api/users?roleCode=operator&page=1&size=1")
+                        .header("Authorization", getAuthorizationHeader()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data.total", is(1)))
+                .andExpect(jsonPath("$.data.page", is(1)))
+                .andExpect(jsonPath("$.data.size", is(1)))
+                .andExpect(jsonPath("$.data.records", hasSize(1)))
+                .andExpect(jsonPath("$.data.records[0].username", is("manager")))
+                .andExpect(jsonPath("$.data.records[0].roleCode", is(UserConstants.ROLE_CODE_OPERATOR)))
+                .andExpect(jsonPath("$.data.records[0].role", is(UserConstants.ROLE_OPERATOR)));
     }
 
     /**

@@ -25,6 +25,11 @@ public class LoginVO {
     private String nickname;
 
     /**
+     * Stable role code used by backend permission logic.
+     */
+    private String roleCode;
+
+    /**
      * User role used by the frontend to show current identity.
      */
     private String role;
@@ -55,10 +60,11 @@ public class LoginVO {
     public LoginVO() {
     }
 
-    public LoginVO(Long id, String username, String nickname, String role, List<String> permissions, Boolean canManageUsers, String token) {
+    public LoginVO(Long id, String username, String nickname, String roleCode, String role, List<String> permissions, Boolean canManageUsers, String token) {
         this.id = id;
         this.username = username;
         this.nickname = nickname;
+        this.roleCode = roleCode;
         this.role = role;
         this.permissions = permissions;
         this.canManageUsers = canManageUsers;
@@ -95,6 +101,14 @@ public class LoginVO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getRoleCode() {
+        return roleCode;
+    }
+
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
     }
 
     public List<String> getPermissions() {

@@ -202,7 +202,7 @@ function getStatusLabel(status) {
 
       <label>
         <span>角色</span>
-        <select v-model="searchForm.role">
+        <select v-model="searchForm.roleCode">
           <option value="">全部角色</option>
           <option
             v-for="role in roleOptions"
@@ -264,7 +264,7 @@ function getStatusLabel(status) {
 
       <label>
         <span>角色</span>
-        <select v-model="userForm.role">
+        <select v-model="userForm.roleCode">
           <option
             v-for="role in roleOptions"
             :key="role.value"

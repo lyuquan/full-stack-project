@@ -126,6 +126,7 @@ class AuthControllerTest {
         user.setUsername("permission_login_user");
         user.setNickname("权限登录用户");
         user.setPassword(passwordEncoder.encode("123456"));
+        user.setRoleCode("login_permission_role");
         user.setRole("登录权限角色");
         user.setStatus(UserConstants.STATUS_ENABLED);
         userRepository.save(user);

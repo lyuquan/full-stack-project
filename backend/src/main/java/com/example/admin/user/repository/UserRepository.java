@@ -49,11 +49,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     long countByStatus(String status);
 
     /**
-     * Count users by role.
+     * Count users by role code.
      *
      * This method is used by the statistics API to calculate role distribution.
      */
-    long countByRole(String role);
+    long countByRoleCode(String roleCode);
 
     /**
      * Search users by optional keyword, role and status.
@@ -64,11 +64,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
             "where (:keyword is null or :keyword = '' " +
             "or lower(u.username) like lower(concat('%', :keyword, '%')) " +
             "or lower(u.nickname) like lower(concat('%', :keyword, '%'))) " +
-            "and (:role is null or :role = '' or u.role = :role) " +
+            "and (:roleCode is null or :roleCode = '' or u.roleCode = :roleCode) " +
             "and (:status is null or :status = '' or u.status = :status)")
     Page<UserEntity> searchUsers(
             @Param("keyword") String keyword,
-            @Param("role") String role,
+            @Param("roleCode") String roleCode,
             @Param("status") String status,
             Pageable pageable
     );

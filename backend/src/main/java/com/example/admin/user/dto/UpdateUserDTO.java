@@ -29,14 +29,11 @@ public class UpdateUserDTO {
     private String nickname;
 
     /**
-     * Role name.
-     *
-     * @Pattern restricts role to the three roles supported by the current page.
-     * This prevents API clients from editing a user into an unsupported role.
+     * Stable role code selected by the frontend.
      */
     @NotBlank(message = "角色不能为空")
-    @Pattern(regexp = UserConstants.ROLE_PATTERN, message = "角色只能是 超级管理员、运营管理员 或 只读用户")
-    private String role;
+    @Pattern(regexp = UserConstants.ROLE_CODE_PATTERN, message = "角色编码只能是 super_admin、operator 或 readonly")
+    private String roleCode;
 
     /**
      * User status.
@@ -61,12 +58,12 @@ public class UpdateUserDTO {
         this.nickname = nickname;
     }
 
-    public String getRole() {
-        return role;
+    public String getRoleCode() {
+        return roleCode;
     }
 
-    public void setRole(String role) {
-        this.role = role;
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
     }
 
     public String getStatus() {

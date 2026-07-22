@@ -26,6 +26,11 @@ public class UserVO {
     private String nickname;
 
     /**
+     * Stable role code.
+     */
+    private String roleCode;
+
+    /**
      * User role name.
      */
     private String role;
@@ -52,6 +57,7 @@ public class UserVO {
             Long id,
             String username,
             String nickname,
+            String roleCode,
             String role,
             String status,
             LocalDateTime createdAt,
@@ -60,6 +66,7 @@ public class UserVO {
         this.id = id;
         this.username = username;
         this.nickname = nickname;
+        this.roleCode = roleCode;
         this.role = role;
         this.status = status;
         this.createdAt = createdAt;
@@ -96,6 +103,14 @@ public class UserVO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getRoleCode() {
+        return roleCode;
+    }
+
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
     }
 
     public String getStatus() {

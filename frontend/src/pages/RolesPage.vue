@@ -20,6 +20,7 @@ defineProps({
   editingRoleCode: String,
   roleDeleteLoadingCode: String,
   rolePermissionSaveLoading: Boolean,
+  canManageRoles: Boolean,
   permissionLoading: Boolean,
   permissionError: String,
   permissions: Array
@@ -55,24 +56,24 @@ const emit = defineEmits([
         <span>角色编码</span>
         <input
           v-model="roleForm.code"
-          :disabled="isEditingRole"
+          :disabled="isEditingRole || !canManageRoles"
           placeholder="report_admin"
         />
       </label>
 
       <label>
         <span>角色名称</span>
-        <input v-model="roleForm.name" placeholder="报表管理员" />
+        <input v-model="roleForm.name" :disabled="!canManageRoles" placeholder="报表管理员" />
       </label>
 
       <label>
         <span>权限数量</span>
-        <input v-model.number="roleForm.permissionCount" min="0" max="999" type="number" />
+        <input v-model.number="roleForm.permissionCount" :disabled="!canManageRoles" min="0" max="999" type="number" />
       </label>
 
       <label class="wide-field">
         <span>角色说明</span>
-        <input v-model="roleForm.description" placeholder="用于说明这个角色能做什么" />
+        <input v-model="roleForm.description" :disabled="!canManageRoles" placeholder="用于说明这个角色能做什么" />
       </label>
 
       <fieldset v-if="isEditingRole" class="wide-field checkbox-field">
@@ -87,6 +88,7 @@ const emit = defineEmits([
               v-model="roleForm.permissionCodes"
               type="checkbox"
               :value="permission.code"
+              :disabled="!canManageRoles"
             />
             <span>
               <strong>{{ permission.name }}</strong>
@@ -97,7 +99,7 @@ const emit = defineEmits([
         <button
           class="secondary-button"
           type="button"
-          :disabled="rolePermissionSaveLoading"
+          :disabled="rolePermissionSaveLoading || !canManageRoles"
           @click="emit('saveRolePermissions')"
         >
           {{ rolePermissionSaveLoading ? '保存权限中...' : '保存权限' }}
@@ -105,7 +107,7 @@ const emit = defineEmits([
       </fieldset>
 
       <div class="form-actions">
-        <button class="submit-button" type="submit" :disabled="roleSaveLoading">
+        <button class="submit-button" type="submit" :disabled="roleSaveLoading || !canManageRoles">
           {{ roleSaveLoading ? '保存中...' : isEditingRole ? '保存修改' : '新增角色' }}
         </button>
         <button class="secondary-button" type="button" @click="emit('resetRoleForm')">
@@ -204,6 +206,7 @@ const emit = defineEmits([
                 <button
                   class="link-button"
                   type="button"
+                  :disabled="!canManageRoles"
                   @click="emit('startEditRole', role)"
                 >
                   编辑
@@ -211,7 +214,7 @@ const emit = defineEmits([
                 <button
                   class="danger-link-button"
                   type="button"
-                  :disabled="roleDeleteLoadingCode === role.code"
+                  :disabled="roleDeleteLoadingCode === role.code || !canManageRoles"
                   @click="emit('deleteRole', role)"
                 >
                   {{ roleDeleteLoadingCode === role.code ? '删除中...' : '删除' }}

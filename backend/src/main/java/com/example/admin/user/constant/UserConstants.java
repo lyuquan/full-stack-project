@@ -9,6 +9,26 @@ package com.example.admin.user.constant;
 public final class UserConstants {
 
     /**
+     * Stable role code for super admin.
+     */
+    public static final String ROLE_CODE_SUPER_ADMIN = "super_admin";
+
+    /**
+     * Stable role code for operation admin.
+     */
+    public static final String ROLE_CODE_OPERATOR = "operator";
+
+    /**
+     * Stable role code for read-only user.
+     */
+    public static final String ROLE_CODE_READONLY = "readonly";
+
+    /**
+     * Regular expression used by DTO validation to allow supported role codes.
+     */
+    public static final String ROLE_CODE_PATTERN = ROLE_CODE_SUPER_ADMIN + "|" + ROLE_CODE_OPERATOR + "|" + ROLE_CODE_READONLY;
+
+    /**
      * Super admin role value.
      */
     public static final String ROLE_SUPER_ADMIN = "超级管理员";

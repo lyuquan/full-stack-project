@@ -4,9 +4,11 @@
  * 请求已经到达后端，但后端返回 code !== 200 时，会抛出这个错误。
  */
 export class ApiError extends Error {
-  constructor(message) {
+  constructor(message, code, status) {
     super(message)
     this.name = 'ApiError'
+    this.code = code
+    this.status = status
   }
 }
 
@@ -85,10 +87,14 @@ async function apiRequest(url, options = {}) {
     ...options,
     headers
   })
-  const result = await response.json()
+  const result = await response.json().catch(() => ({
+    code: response.status,
+    message: response.ok ? '接口返回格式错误' : `HTTP ${response.status}`,
+    data: null
+  }))
 
-  if (result.code !== 200) {
-    throw new ApiError(result.message || '接口返回异常')
+  if (!response.ok || result.code !== 200) {
+    throw new ApiError(result.message || '接口返回异常', result.code, response.status)
   }
 
   return result.data

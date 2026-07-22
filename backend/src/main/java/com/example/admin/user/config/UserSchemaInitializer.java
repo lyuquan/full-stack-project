@@ -35,6 +35,7 @@ public class UserSchemaInitializer implements CommandLineRunner {
         addTimestampColumnIfMissing("created_at");
         addTimestampColumnIfMissing("updated_at");
         addVarcharColumnIfMissing("password", 100);
+        addVarcharColumnIfMissing("role_code", 50);
 
         /*
          * Old rows did not have create/update time values.
@@ -43,6 +44,9 @@ public class UserSchemaInitializer implements CommandLineRunner {
         jdbcTemplate.update("update sys_user set created_at = current_timestamp where created_at is null");
         jdbcTemplate.update("update sys_user set updated_at = current_timestamp where updated_at is null");
         jdbcTemplate.update("update sys_user set password = '123456' where password is null");
+        jdbcTemplate.update("update sys_user set role_code = 'super_admin' where role_code is null and role = '超级管理员'");
+        jdbcTemplate.update("update sys_user set role_code = 'operator' where role_code is null and role = '运营管理员'");
+        jdbcTemplate.update("update sys_user set role_code = 'readonly' where role_code is null and role = '只读用户'");
     }
 
     /**

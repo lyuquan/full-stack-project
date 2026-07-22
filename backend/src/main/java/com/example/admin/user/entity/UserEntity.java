@@ -51,7 +51,16 @@ public class UserEntity {
     private String password;
 
     /**
-     * User role name.
+     * Stable role code.
+     *
+     * Business logic uses this value because it does not change when the role
+     * display name changes.
+     */
+    @Column(name = "role_code", nullable = false, length = 50)
+    private String roleCode;
+
+    /**
+     * User role name shown on the frontend.
      */
     @Column(nullable = false, length = 30)
     private String role;
@@ -134,6 +143,14 @@ public class UserEntity {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getRoleCode() {
+        return roleCode;
+    }
+
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
     }
 
     public String getStatus() {

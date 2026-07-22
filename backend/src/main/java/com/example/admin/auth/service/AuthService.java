@@ -85,12 +85,13 @@ public class AuthService {
             throw new BusinessException(400, "账号已被禁用");
         }
 
-        List<String> permissions = listPermissionsByUserRole(user.getRole());
+        List<String> permissions = listPermissionsByUserRole(user.getRoleCode(), user.getRole());
 
         return new LoginVO(
                 user.getId(),
                 user.getUsername(),
                 user.getNickname(),
+                user.getRoleCode(),
                 user.getRole(),
                 permissions,
                 AuthPermissions.canManageUsers(permissions),
@@ -104,8 +105,12 @@ public class AuthService {
      * 当前学习项目里，UserEntity.role 保存的是角色显示名称，例如“超级管理员”。
      * 所以这里先按 name 查询 sys_role，再读取 sys_role.permission_codes。
      */
-    private List<String> listPermissionsByUserRole(String roleName) {
-        Optional<RoleEntity> optionalRole = roleRepository.findByName(roleName);
+    private List<String> listPermissionsByUserRole(String roleCode, String roleName) {
+        if (roleCode == null || roleCode.trim().isEmpty()) {
+            return AuthPermissions.listByRole(roleName);
+        }
+
+        Optional<RoleEntity> optionalRole = roleRepository.findByCode(roleCode);
 
         if (optionalRole.isPresent()) {
             return splitPermissionCodes(optionalRole.get().getPermissionCodes());
