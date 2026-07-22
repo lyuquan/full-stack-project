@@ -24,6 +24,11 @@ public final class AuthPermissions {
      */
     public static final String USER_WRITE = "user:write";
 
+    /**
+     * Permission for showing and entering the role management menu.
+     */
+    public static final String ROLE_MANAGE = "role:manage";
+
     private AuthPermissions() {
     }
 
@@ -35,7 +40,7 @@ public final class AuthPermissions {
      */
     public static List<String> listByRole(String role) {
         if (UserConstants.ROLE_SUPER_ADMIN.equals(role)) {
-            return Arrays.asList(USER_READ, USER_WRITE);
+            return Arrays.asList(USER_READ, USER_WRITE, ROLE_MANAGE);
         }
 
         return Collections.singletonList(USER_READ);

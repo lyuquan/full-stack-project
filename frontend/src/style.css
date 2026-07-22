@@ -42,9 +42,11 @@ button {
 }
 
 .menu-item {
+  min-height: 40px;
   padding: 10px 12px;
   border-radius: 6px;
   color: #c9d3e6;
+  line-height: 20px;
 }
 
 .menu-item.active {

@@ -124,6 +124,22 @@ const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagin
 // It matches backend AuthPermissions.USER_WRITE.
 const USER_WRITE_PERMISSION = 'user:write'
 
+// USER_READ_PERMISSION is the permission code for opening the user management menu.
+// Users without it should not see user data entry points.
+const USER_READ_PERMISSION = 'user:read'
+
+// ROLE_MANAGE_PERMISSION controls whether the future role management menu is visible.
+// This step only prepares the menu permission; the real role page will come later.
+const ROLE_MANAGE_PERMISSION = 'role:manage'
+
+// allMenus is the complete frontend menu configuration.
+// permission is optional: menus without permission are visible to everyone.
+const allMenus = [
+  { key: 'home', label: '系统首页', permission: '' },
+  { key: 'users', label: '用户管理', permission: USER_READ_PERMISSION, active: true },
+  { key: 'roles', label: '角色管理', permission: ROLE_MANAGE_PERMISSION }
+]
+
 // hasPermission checks whether the current login user owns a permission code.
 // The frontend uses it to control button state, while the backend still does the real security check.
 function hasPermission(permissionCode) {
@@ -137,6 +153,10 @@ function hasPermission(permissionCode) {
 // canManageUsers controls whether the current login user can change user data.
 // It is calculated from the backend permission list instead of role text.
 const canManageUsers = computed(() => hasPermission(USER_WRITE_PERMISSION))
+
+// availableMenus filters menus by the current user's permissions.
+// After login, different roles can see different menu entries.
+const availableMenus = computed(() => allMenus.filter((menu) => !menu.permission || hasPermission(menu.permission)))
 
 /**
  * 请求后端健康检查接口，用来确认前后端是否已经连通。
@@ -637,9 +657,14 @@ onMounted(async () => {
     <aside class="sidebar">
       <div class="brand">Admin Study</div>
       <nav class="menu">
-        <span class="menu-item">系统首页</span>
-        <span class="menu-item active">用户管理</span>
-        <span class="menu-item">角色管理</span>
+        <span
+          v-for="menu in availableMenus"
+          :key="menu.key"
+          class="menu-item"
+          :class="{ active: menu.active }"
+        >
+          {{ menu.label }}
+        </span>
       </nav>
     </aside>
 

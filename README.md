@@ -1309,6 +1309,46 @@ README.md
 
 注意：这一步的权限列表仍然是代码写死的。真实项目里，权限码通常会存到数据库，通过角色权限关联表查询出来。
 
+### 第 32 步：前端动态菜单权限
+
+目标：根据当前登录用户的 `permissions` 权限码列表动态显示左侧菜单。
+
+为什么要做这一步：
+
+- 第 31 步已经让后端返回权限码列表，但左侧菜单还是前端写死的。
+- 后台系统常见做法是：用户有什么页面权限，就显示什么菜单。
+- 菜单权限属于前端体验；接口权限仍然必须由后端拦截器兜底。
+- 这样普通用户不会看到自己不能进入的入口，超级管理员能看到更多管理入口。
+
+这一新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/constant/AuthPermissions.java
+backend/src/test/java/com/example/admin/auth/controller/AuthControllerTest.java
+frontend/src/App.vue
+frontend/src/style.css
+README.md
+```
+
+每个文件的作用：
+
+- `AuthPermissions.java`：新增 `role:manage` 权限码，用来控制“角色管理”菜单是否显示；超级管理员拥有这个权限，普通角色暂时没有。
+- `AuthControllerTest.java`：更新测试，确认超级管理员登录后会返回 `user:read`、`user:write`、`role:manage` 三个权限码。
+- `App.vue`：新增 `allMenus` 菜单配置、`availableMenus` 计算属性和 `ROLE_MANAGE_PERMISSION` 常量；左侧菜单从写死改成按权限过滤后渲染。
+- `style.css`：给菜单项补充稳定高度和行高，避免动态菜单变化时样式跳动。
+- `README.md`：记录第 32 步的学习目标和代码含义。
+
+你需要理解：
+
+- `allMenus`：前端完整菜单配置，表示系统理论上有哪些菜单。
+- `availableMenus`：当前登录用户真正能看到的菜单。
+- `permission`：菜单需要的权限码；没有权限码的菜单表示所有人都能看到。
+- `v-for="menu in availableMenus"`：Vue 根据数组循环渲染菜单。
+- `:class="{ active: menu.active }"`：根据菜单数据动态决定是否加 active 样式。
+- 菜单权限不等于接口权限：隐藏菜单不能防止别人直接调接口，所以后端拦截器仍然必须保留。
+
+注意：这一步只是前端动态显示菜单。真实项目里，菜单配置也可能来自后端接口，比如 `/api/auth/menus`，后面可以继续学习。
+
 ## 启动后端
 
 进入后端目录：

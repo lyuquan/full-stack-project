@@ -57,9 +57,10 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.username", is("admin")))
                 .andExpect(jsonPath("$.data.nickname", is("系统管理员")))
                 .andExpect(jsonPath("$.data.role", is("超级管理员")))
-                .andExpect(jsonPath("$.data.permissions", hasSize(2)))
+                .andExpect(jsonPath("$.data.permissions", hasSize(3)))
                 .andExpect(jsonPath("$.data.permissions[0]", is(AuthPermissions.USER_READ)))
                 .andExpect(jsonPath("$.data.permissions[1]", is(AuthPermissions.USER_WRITE)))
+                .andExpect(jsonPath("$.data.permissions[2]", is(AuthPermissions.ROLE_MANAGE)))
                 .andExpect(jsonPath("$.data.canManageUsers", is(true)))
                 .andExpect(jsonPath("$.data.token", startsWith("study-token-")));
     }
@@ -119,9 +120,10 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.username", is("admin")))
                 .andExpect(jsonPath("$.data.nickname", is("系统管理员")))
                 .andExpect(jsonPath("$.data.role", is("超级管理员")))
-                .andExpect(jsonPath("$.data.permissions", hasSize(2)))
+                .andExpect(jsonPath("$.data.permissions", hasSize(3)))
                 .andExpect(jsonPath("$.data.permissions[0]", is(AuthPermissions.USER_READ)))
                 .andExpect(jsonPath("$.data.permissions[1]", is(AuthPermissions.USER_WRITE)))
+                .andExpect(jsonPath("$.data.permissions[2]", is(AuthPermissions.ROLE_MANAGE)))
                 .andExpect(jsonPath("$.data.canManageUsers", is(true)));
     }
 
