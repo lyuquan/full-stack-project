@@ -97,6 +97,16 @@ const roleDetailLoading = ref(false)
 const roleDetailError = ref('')
 const selectedRole = ref(null)
 
+// role form state: used by POST /api/roles to create a new role.
+const roleForm = reactive({
+  code: '',
+  name: '',
+  description: '',
+  permissionCount: 0
+})
+const roleSaveLoading = ref(false)
+const roleSaveMessage = ref('')
+
 // user:write is the backend permission code for changing user data.
 const USER_WRITE_PERMISSION = 'user:write'
 
@@ -359,6 +369,41 @@ function clearRoleDetail() {
 }
 
 /**
+ * Create a role by POST /api/roles.
+ */
+async function saveRole() {
+  roleSaveLoading.value = true
+  roleSaveMessage.value = ''
+  roleError.value = ''
+
+  try {
+    const savedRole = await apiPost('/api/roles', {
+      ...roleForm,
+      permissionCount: Number(roleForm.permissionCount)
+    })
+
+    roleSaveMessage.value = `已新增角色：${savedRole.name}`
+    selectedRole.value = savedRole
+    resetRoleForm()
+    await loadRoles()
+  } catch (error) {
+    roleError.value = getApiErrorMessage(error, '保存角色请求失败，请确认 Java 后端已经启动')
+  } finally {
+    roleSaveLoading.value = false
+  }
+}
+
+/**
+ * Reset the role form to empty create mode.
+ */
+function resetRoleForm() {
+  roleForm.code = ''
+  roleForm.name = ''
+  roleForm.description = ''
+  roleForm.permissionCount = 0
+}
+
+/**
  * Search from the first page when conditions change.
  */
 function submitSearch() {
@@ -466,6 +511,7 @@ function clearProtectedData() {
   menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
   selectedUser.value = null
   selectedRole.value = null
+  resetRoleForm()
   userError.value = ''
   statsError.value = ''
   roleOptionsError.value = ''
@@ -473,6 +519,7 @@ function clearProtectedData() {
   detailError.value = ''
   roleError.value = ''
   roleDetailError.value = ''
+  roleSaveMessage.value = ''
   router.replace('/')
 }
 
@@ -784,6 +831,9 @@ watch(
         :role-detail-loading="roleDetailLoading"
         :role-detail-error="roleDetailError"
         :selected-role="selectedRole"
+        :role-form="roleForm"
+        :role-save-loading="roleSaveLoading"
+        :role-save-message="roleSaveMessage"
         @load-user-stats="loadUserStats"
         @clear-user-detail="clearUserDetail"
         @submit-search="submitSearch"
@@ -800,6 +850,8 @@ watch(
         @load-roles="loadRoles"
         @load-role-detail="loadRoleDetail"
         @clear-role-detail="clearRoleDetail"
+        @save-role="saveRole"
+        @reset-role-form="resetRoleForm"
       />
     </section>
   </main>

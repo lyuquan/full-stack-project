@@ -1,13 +1,17 @@
 package com.example.admin.role.controller;
 
 import com.example.admin.common.ApiResponse;
+import com.example.admin.role.dto.CreateRoleDTO;
 import com.example.admin.role.service.RoleService;
 import com.example.admin.role.vo.RoleVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
 import java.util.List;
 
 /**
@@ -51,6 +55,18 @@ public class RoleController {
         if (role == null) {
             return ApiResponse.error(404, "Role does not exist");
         }
+
+        return ApiResponse.success(role);
+    }
+
+    /**
+     * Create one role.
+     *
+     * Example: POST /api/roles
+     */
+    @PostMapping
+    public ApiResponse<RoleVO> createRole(@Valid @RequestBody CreateRoleDTO createRoleDTO) {
+        RoleVO role = roleService.createRole(createRoleDTO);
 
         return ApiResponse.success(role);
     }

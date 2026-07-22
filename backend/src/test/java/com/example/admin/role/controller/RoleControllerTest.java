@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -96,6 +97,51 @@ class RoleControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(404)))
                 .andExpect(jsonPath("$.message", is("Role does not exist")));
+    }
+
+    /**
+     * Logged-in users can create a new role.
+     */
+    @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    void createRoleShouldSaveRoleWhenRequestIsValid() throws Exception {
+        mockMvc.perform(post("/api/roles")
+                        .header("Authorization", getAuthorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"report_admin\",\"name\":\"Report Admin\",\"description\":\"Can view report pages.\",\"permissionCount\":2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data.code", is("report_admin")))
+                .andExpect(jsonPath("$.data.name", is("Report Admin")))
+                .andExpect(jsonPath("$.data.permissionCount", is(2)));
+    }
+
+    /**
+     * Role code is unique, so creating the same role twice should fail.
+     */
+    @Test
+    void createRoleShouldReturn400WhenCodeAlreadyExists() throws Exception {
+        mockMvc.perform(post("/api/roles")
+                        .header("Authorization", getAuthorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"operator\",\"name\":\"Operator Copy\",\"description\":\"Duplicate code.\",\"permissionCount\":1}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(400)))
+                .andExpect(jsonPath("$.message", is("Role code already exists")));
+    }
+
+    /**
+     * DTO validation should reject invalid role code format before Service saves data.
+     */
+    @Test
+    void createRoleShouldReturn400WhenCodeFormatIsInvalid() throws Exception {
+        mockMvc.perform(post("/api/roles")
+                        .header("Authorization", getAuthorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"Report Admin\",\"name\":\"Report Admin\",\"description\":\"Invalid code format.\",\"permissionCount\":2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(400)))
+                .andExpect(jsonPath("$.message", is("Role code must start with lowercase letter and only contain lowercase letters, numbers or underscores")));
     }
 
     private String getAuthorizationHeader() throws Exception {

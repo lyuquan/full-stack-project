@@ -1,6 +1,6 @@
 <script setup>
 // RolesPage renders the role-management route.
-// App.vue still owns request state and passes role data into this page.
+// App.vue owns request state and passes role data/form objects into this page.
 defineOptions({
   inheritAttrs: false
 })
@@ -12,16 +12,67 @@ defineProps({
   roles: Array,
   roleDetailLoading: Boolean,
   roleDetailError: String,
-  selectedRole: Object
+  selectedRole: Object,
+  roleForm: Object,
+  roleSaveLoading: Boolean,
+  roleSaveMessage: String
 })
 
 // Emits notify App.vue to run API requests or clear page state.
-const emit = defineEmits(['loadRoles', 'loadRoleDetail', 'clearRoleDetail'])
+const emit = defineEmits([
+  'loadRoles',
+  'loadRoleDetail',
+  'clearRoleDetail',
+  'saveRole',
+  'resetRoleForm'
+])
 </script>
 
 <template>
   <section class="panel roles-panel">
     <div class="panel-header">
+      <div>
+        <p class="eyebrow">POST /api/roles</p>
+        <h2>新增角色</h2>
+      </div>
+    </div>
+
+    <form class="form-grid" @submit.prevent="emit('saveRole')">
+      <label>
+        <span>角色编码</span>
+        <input v-model="roleForm.code" placeholder="report_admin" />
+      </label>
+
+      <label>
+        <span>角色名称</span>
+        <input v-model="roleForm.name" placeholder="报表管理员" />
+      </label>
+
+      <label>
+        <span>权限数量</span>
+        <input v-model.number="roleForm.permissionCount" min="0" max="999" type="number" />
+      </label>
+
+      <label class="wide-field">
+        <span>角色说明</span>
+        <input v-model="roleForm.description" placeholder="用于说明这个角色能做什么" />
+      </label>
+
+      <div class="form-actions">
+        <button class="submit-button" type="submit" :disabled="roleSaveLoading">
+          {{ roleSaveLoading ? '保存中...' : '新增角色' }}
+        </button>
+        <button class="secondary-button" type="button" @click="emit('resetRoleForm')">
+          清空
+        </button>
+      </div>
+    </form>
+
+    <p v-if="roleSaveMessage" class="status success form-message">
+      {{ roleSaveMessage }}
+    </p>
+
+    <div class="panel-header role-list-header">
       <div>
         <p class="eyebrow">GET /api/roles</p>
         <h2>角色管理</h2>

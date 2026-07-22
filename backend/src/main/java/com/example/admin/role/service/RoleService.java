@@ -1,5 +1,7 @@
 package com.example.admin.role.service;
 
+import com.example.admin.common.BusinessException;
+import com.example.admin.role.dto.CreateRoleDTO;
 import com.example.admin.role.entity.RoleEntity;
 import com.example.admin.role.repository.RoleRepository;
 import com.example.admin.role.vo.RoleVO;
@@ -56,6 +58,26 @@ public class RoleService {
         }
 
         return toVO(role.get());
+    }
+
+    /**
+     * Create one role from frontend form data.
+     *
+     * Service does business validation here because duplicate role code depends
+     * on database data, not just request format.
+     */
+    public RoleVO createRole(CreateRoleDTO createRoleDTO) {
+        if (roleRepository.existsByCode(createRoleDTO.getCode())) {
+            throw new BusinessException(400, "Role code already exists");
+        }
+
+        RoleEntity role = new RoleEntity();
+        role.setCode(createRoleDTO.getCode());
+        role.setName(createRoleDTO.getName());
+        role.setDescription(createRoleDTO.getDescription());
+        role.setPermissionCount(createRoleDTO.getPermissionCount());
+
+        return toVO(roleRepository.save(role));
     }
 
     /**

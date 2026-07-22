@@ -1662,3 +1662,36 @@ http://localhost:5173
 - `findByCode(code)`：Spring Data JPA 根据方法名自动生成查询 SQL。
 - `RoleDataInitializer`：后端启动后自动准备演示数据，避免你手动去 H2 插入角色。
 - `toVO(roleEntity)`：把数据库实体转换成前端展示对象，避免 Controller 直接暴露数据库结构。
+
+### 第 40 步：新增角色接口和前端表单
+
+目标：在角色管理页面新增一个表单，提交后调用 `POST /api/roles`，把新角色保存到 H2 数据库。
+
+为什么要做这一步：
+
+- 第 39 步已经让角色数据进入数据库，这一步开始真正写入数据库。
+- 新增数据通常使用 `POST` 请求，前端把表单数据作为 JSON 放到请求体里。
+- 后端不能只相信前端表单，仍然要用 DTO 注解做参数校验。
+- 角色编码 `code` 是接口路径和程序逻辑会使用的稳定值，所以必须限制格式并且不能重复。
+
+这一步新增或修改了什么：
+
+- `CreateRoleDTO.java`：新增角色创建请求对象，接收 `code`、`name`、`description`、`permissionCount`。
+- `RoleController.java`：新增 `POST /api/roles`，接收前端提交的 JSON。
+- `RoleService.java`：新增 `createRole`，校验角色编码是否重复，并保存到数据库。
+- `RoleControllerTest.java`：新增创建成功、编码重复、编码格式非法三个测试。
+- `App.vue`：新增 `roleForm`、`saveRole`、`resetRoleForm`，负责调接口和刷新列表。
+- `RolesPage.vue`：新增角色表单，点击“新增角色”后触发父组件保存。
+- `style.css`：新增通用表单网格样式，角色表单和后续表单都可以复用。
+- `README.md`：记录第 40 步学习内容。
+
+你需要理解：
+
+- `POST /api/roles`：新增角色接口。
+- `@RequestBody`：从请求体 JSON 里读取数据。
+- `@Valid`：触发 DTO 上的校验注解。
+- `@Pattern`：限制角色编码格式，例如只允许 `report_admin` 这种小写下划线写法。
+- `existsByCode(code)`：保存前查数据库，判断角色编码是否已经存在。
+- `roleRepository.save(role)`：把角色实体保存进数据库。
+- `v-model="roleForm.code"`：前端输入框和表单对象双向绑定。
+- `emit('saveRole')`：页面组件通知 `App.vue` 去调用保存接口。
