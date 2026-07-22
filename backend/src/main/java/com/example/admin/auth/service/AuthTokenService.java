@@ -1,10 +1,11 @@
 package com.example.admin.auth.service;
 
+import com.example.admin.auth.constant.AuthPermissions;
 import com.example.admin.user.entity.UserEntity;
-import com.example.admin.user.constant.UserConstants;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,13 +42,15 @@ public class AuthTokenService {
      */
     public String createToken(UserEntity user) {
         String token = "study-token-" + user.getId() + "-" + UUID.randomUUID().toString();
+        List<String> permissions = AuthPermissions.listByRole(user.getRole());
 
         tokenStore.put(token, new LoginUser(
                 user.getId(),
                 user.getUsername(),
                 user.getNickname(),
                 user.getRole(),
-                UserConstants.ROLE_SUPER_ADMIN.equals(user.getRole())
+                permissions,
+                AuthPermissions.canManageUsers(permissions)
         ));
 
         return token;
@@ -125,13 +128,16 @@ public class AuthTokenService {
 
         private final String role;
 
+        private final List<String> permissions;
+
         private final Boolean canManageUsers;
 
-        public LoginUser(Long id, String username, String nickname, String role, Boolean canManageUsers) {
+        public LoginUser(Long id, String username, String nickname, String role, List<String> permissions, Boolean canManageUsers) {
             this.id = id;
             this.username = username;
             this.nickname = nickname;
             this.role = role;
+            this.permissions = permissions;
             this.canManageUsers = canManageUsers;
         }
 
@@ -149,6 +155,10 @@ public class AuthTokenService {
 
         public String getRole() {
             return role;
+        }
+
+        public List<String> getPermissions() {
+            return permissions;
         }
 
         public Boolean getCanManageUsers() {

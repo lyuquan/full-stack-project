@@ -1,5 +1,7 @@
 package com.example.admin.auth.vo;
 
+import java.util.List;
+
 /**
  * Login response data returned to the frontend.
  *
@@ -28,6 +30,14 @@ public class LoginVO {
     private String role;
 
     /**
+     * Permission codes owned by the current login user.
+     *
+     * The frontend can check codes such as user:read and user:write to decide
+     * which buttons should be enabled.
+     */
+    private List<String> permissions;
+
+    /**
      * Whether the logged-in user can manage user data.
      *
      * The frontend can use this field to enable or disable user action buttons
@@ -45,11 +55,12 @@ public class LoginVO {
     public LoginVO() {
     }
 
-    public LoginVO(Long id, String username, String nickname, String role, Boolean canManageUsers, String token) {
+    public LoginVO(Long id, String username, String nickname, String role, List<String> permissions, Boolean canManageUsers, String token) {
         this.id = id;
         this.username = username;
         this.nickname = nickname;
         this.role = role;
+        this.permissions = permissions;
         this.canManageUsers = canManageUsers;
         this.token = token;
     }
@@ -84,6 +95,14 @@ public class LoginVO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public List<String> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(List<String> permissions) {
+        this.permissions = permissions;
     }
 
     public Boolean getCanManageUsers() {

@@ -1263,6 +1263,52 @@ README.md
 
 注意：这一步只是把一个权限能力写死在代码里。真实项目里，权限通常来自数据库权限表、角色权限关联表，或者 Spring Security 的权限体系。
 
+### 第 31 步：返回权限码列表
+
+目标：让登录接口和当前用户接口返回 `permissions` 权限码列表。前端根据权限码判断按钮是否可用，后端拦截器也根据权限码判断写操作是否放行。
+
+为什么要做这一步：
+
+- 第 30 步只有一个 `canManageUsers`，适合单个功能，但权限多了以后会变成很多布尔字段。
+- 真实后台通常使用权限码，比如 `user:read`、`user:write`、`role:write`、`report:view`。
+- 权限码列表更通用，前端可以用同一个 `hasPermission(code)` 方法判断不同按钮。
+- 后端也可以统一检查权限码，不需要在每个地方都写“某某角色可以做某事”。
+
+这一新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/constant/AuthPermissions.java
+backend/src/main/java/com/example/admin/auth/vo/LoginVO.java
+backend/src/main/java/com/example/admin/auth/service/AuthService.java
+backend/src/main/java/com/example/admin/auth/service/AuthTokenService.java
+backend/src/main/java/com/example/admin/auth/interceptor/AdminPermissionInterceptor.java
+backend/src/test/java/com/example/admin/auth/controller/AuthControllerTest.java
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `AuthPermissions.java`：新增权限码常量类，集中定义 `user:read` 和 `user:write`，并提供按角色生成权限列表的方法。
+- `LoginVO.java`：登录返回数据新增 `permissions` 字段，前端可以拿到当前用户拥有的权限码列表。
+- `AuthService.java`：登录时调用 `AuthPermissions.listByRole(role)` 生成权限列表，再根据权限列表计算 `canManageUsers`。
+- `AuthTokenService.java`：把 `permissions` 保存进 token 仓库，所以刷新页面调用 `/api/auth/me` 时也能拿到权限列表。
+- `AdminPermissionInterceptor.java`：写操作不再直接判断角色，而是判断当前用户是否拥有 `user:write` 权限。
+- `AuthControllerTest.java`：新增测试，确认超级管理员拥有 `user:read` 和 `user:write`，运营管理员只有 `user:read`。
+- `App.vue`：新增 `hasPermission(permissionCode)`，前端按钮权限改为从 `permissions` 列表判断。
+- `README.md`：记录第 31 步的学习目标和代码含义。
+
+你需要理解：
+
+- `permissions`：权限码数组，例如 `["user:read", "user:write"]`。
+- `user:read`：读取用户数据的权限。
+- `user:write`：新增、编辑、启用禁用、删除用户的权限。
+- `hasPermission('user:write')`：前端检查当前登录用户是否拥有某个权限码。
+- `canManageUsers`：保留的快捷字段，方便页面直接使用；它现在由权限列表计算出来。
+- 权限码比角色更灵活：以后如果“运营管理员”也允许编辑用户，只需要给它分配 `user:write`，不用改前端按钮逻辑。
+
+注意：这一步的权限列表仍然是代码写死的。真实项目里，权限码通常会存到数据库，通过角色权限关联表查询出来。
+
 ## 启动后端
 
 进入后端目录：

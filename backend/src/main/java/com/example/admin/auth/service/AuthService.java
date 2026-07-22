@@ -1,6 +1,7 @@
 package com.example.admin.auth.service;
 
 import com.example.admin.auth.dto.LoginDTO;
+import com.example.admin.auth.constant.AuthPermissions;
 import com.example.admin.auth.vo.LoginVO;
 import com.example.admin.common.BusinessException;
 import com.example.admin.user.constant.UserConstants;
@@ -9,6 +10,7 @@ import com.example.admin.user.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -67,12 +69,15 @@ public class AuthService {
             throw new BusinessException(400, "账号已被禁用");
         }
 
+        List<String> permissions = AuthPermissions.listByRole(user.getRole());
+
         return new LoginVO(
                 user.getId(),
                 user.getUsername(),
                 user.getNickname(),
                 user.getRole(),
-                UserConstants.ROLE_SUPER_ADMIN.equals(user.getRole()),
+                permissions,
+                AuthPermissions.canManageUsers(permissions),
                 authTokenService.createToken(user)
         );
     }

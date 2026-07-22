@@ -1,5 +1,6 @@
 package com.example.admin.auth.controller;
 
+import com.example.admin.auth.constant.AuthPermissions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -55,7 +57,27 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.username", is("admin")))
                 .andExpect(jsonPath("$.data.nickname", is("系统管理员")))
                 .andExpect(jsonPath("$.data.role", is("超级管理员")))
+                .andExpect(jsonPath("$.data.permissions", hasSize(2)))
+                .andExpect(jsonPath("$.data.permissions[0]", is(AuthPermissions.USER_READ)))
+                .andExpect(jsonPath("$.data.permissions[1]", is(AuthPermissions.USER_WRITE)))
                 .andExpect(jsonPath("$.data.canManageUsers", is(true)))
+                .andExpect(jsonPath("$.data.token", startsWith("study-token-")));
+    }
+
+    /**
+     * 运营管理员可以登录，但只拥有查询用户的权限，不能修改用户数据。
+     */
+    @Test
+    void loginShouldReturnReadOnlyPermissionsWhenUserIsNotSuperAdmin() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"manager\",\"password\":\"123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data.username", is("manager")))
+                .andExpect(jsonPath("$.data.permissions", hasSize(1)))
+                .andExpect(jsonPath("$.data.permissions[0]", is(AuthPermissions.USER_READ)))
+                .andExpect(jsonPath("$.data.canManageUsers", is(false)))
                 .andExpect(jsonPath("$.data.token", startsWith("study-token-")));
     }
 
@@ -97,6 +119,9 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.username", is("admin")))
                 .andExpect(jsonPath("$.data.nickname", is("系统管理员")))
                 .andExpect(jsonPath("$.data.role", is("超级管理员")))
+                .andExpect(jsonPath("$.data.permissions", hasSize(2)))
+                .andExpect(jsonPath("$.data.permissions[0]", is(AuthPermissions.USER_READ)))
+                .andExpect(jsonPath("$.data.permissions[1]", is(AuthPermissions.USER_WRITE)))
                 .andExpect(jsonPath("$.data.canManageUsers", is(true)));
     }
 

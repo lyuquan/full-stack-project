@@ -120,9 +120,23 @@ const isEditing = computed(() => editingUserId.value !== null)
 // totalPages 根据总条数和每页数量计算总页数，最少显示 1 页。
 const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagination.size)))
 
+// USER_WRITE_PERMISSION is the permission code for changing user data.
+// It matches backend AuthPermissions.USER_WRITE.
+const USER_WRITE_PERMISSION = 'user:write'
+
+// hasPermission checks whether the current login user owns a permission code.
+// The frontend uses it to control button state, while the backend still does the real security check.
+function hasPermission(permissionCode) {
+  return Boolean(
+    currentUser.value &&
+      Array.isArray(currentUser.value.permissions) &&
+      currentUser.value.permissions.includes(permissionCode)
+  )
+}
+
 // canManageUsers controls whether the current login user can change user data.
-// The value comes from the backend, so the frontend does not need to guess permission from role text.
-const canManageUsers = computed(() => Boolean(currentUser.value && currentUser.value.canManageUsers))
+// It is calculated from the backend permission list instead of role text.
+const canManageUsers = computed(() => hasPermission(USER_WRITE_PERMISSION))
 
 /**
  * 请求后端健康检查接口，用来确认前后端是否已经连通。

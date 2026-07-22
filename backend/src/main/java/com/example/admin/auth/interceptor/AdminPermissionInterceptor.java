@@ -1,8 +1,8 @@
 package com.example.admin.auth.interceptor;
 
+import com.example.admin.auth.constant.AuthPermissions;
 import com.example.admin.auth.service.AuthTokenService;
 import com.example.admin.common.ApiResponse;
-import com.example.admin.user.constant.UserConstants;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -50,7 +50,9 @@ public class AdminPermissionInterceptor implements HandlerInterceptor {
 
         AuthTokenService.LoginUser loginUser = authTokenService.getLoginUser(request);
 
-        if (loginUser != null && UserConstants.ROLE_SUPER_ADMIN.equals(loginUser.getRole())) {
+        // Check the permission list instead of checking role text directly.
+        // This makes the rule easier to extend when more roles can own user:write later.
+        if (loginUser != null && AuthPermissions.canManageUsers(loginUser.getPermissions())) {
             return true;
         }
 
