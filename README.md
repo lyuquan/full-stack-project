@@ -1349,6 +1349,50 @@ README.md
 
 注意：这一步只是前端动态显示菜单。真实项目里，菜单配置也可能来自后端接口，比如 `/api/auth/menus`，后面可以继续学习。
 
+### 第 33 步：后端返回菜单列表
+
+目标：新增 `GET /api/auth/menus`，由后端根据当前登录用户的权限返回左侧菜单，前端只负责渲染接口返回的数据。
+
+为什么要做这一步：
+
+- 第 32 步菜单虽然已经按权限动态显示，但完整菜单配置仍然写在前端。
+- 真实后台项目里，菜单经常来自后端，这样后端可以统一控制角色、权限、菜单关系。
+- 前端不需要知道“哪个权限对应哪个菜单”，只需要渲染后端返回的 `key`、`label`、`active`。
+- 后面如果菜单变多，前端不用频繁改权限判断规则。
+
+这一新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/vo/MenuVO.java
+backend/src/main/java/com/example/admin/auth/service/AuthService.java
+backend/src/main/java/com/example/admin/auth/controller/AuthController.java
+backend/src/main/java/com/example/admin/config/WebConfig.java
+backend/src/test/java/com/example/admin/auth/controller/AuthControllerTest.java
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `MenuVO.java`：新增菜单返回对象，包含 `key`、`label`、`active` 三个字段。
+- `AuthService.java`：新增 `listMenus(permissions)`，根据权限列表生成当前用户可见菜单。
+- `AuthController.java`：新增 `GET /api/auth/menus`，返回当前登录用户可见菜单。
+- `WebConfig.java`：把 `/api/auth/menus` 加入登录拦截器保护范围，没有 token 不能查询菜单。
+- `AuthControllerTest.java`：新增菜单接口测试。超级管理员返回首页、用户管理、角色管理；运营管理员不返回角色管理。
+- `App.vue`：移除前端写死的完整菜单配置，新增 `menus` 状态和 `loadMenus()`，登录或刷新恢复登录后请求后端菜单。
+- `README.md`：记录第 33 步的学习目标和代码含义。
+
+你需要理解：
+
+- `MenuVO`：菜单 VO，控制前端能看到哪些菜单字段。
+- `GET /api/auth/menus`：当前登录用户菜单接口。
+- `menus.value = await apiGet('/api/auth/menus')`：前端把后端返回的菜单保存起来。
+- `v-for="menu in menus"`：前端按后端返回的菜单数组循环渲染。
+- 菜单由后端返回，不代表接口不用校验；接口权限仍然由后端拦截器负责。
+- 这一步让前端更轻：前端少写权限规则，后端统一管理菜单可见性。
+
+注意：现在菜单仍然是后端代码写死生成的。真实项目里，菜单通常会放进数据库表，例如 `sys_menu`，再通过角色权限关系查询出来。
+
 ## 启动后端
 
 进入后端目录：

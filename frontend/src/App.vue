@@ -20,6 +20,10 @@ const loginError = ref('')
 // currentUser stores the user information returned after login.
 const currentUser = ref(null)
 
+// menus stores sidebar menus returned by GET /api/auth/menus.
+// The backend decides which menu entries the current login user can see.
+const menus = ref([{ key: 'home', label: '系统首页', active: false }])
+
 // LOGIN_STORAGE_KEY 是保存登录用户的 localStorage key，刷新页面后还能找回登录状态。
 const LOGIN_STORAGE_KEY = 'admin-study-login-user'
 
@@ -124,22 +128,6 @@ const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagin
 // It matches backend AuthPermissions.USER_WRITE.
 const USER_WRITE_PERMISSION = 'user:write'
 
-// USER_READ_PERMISSION is the permission code for opening the user management menu.
-// Users without it should not see user data entry points.
-const USER_READ_PERMISSION = 'user:read'
-
-// ROLE_MANAGE_PERMISSION controls whether the future role management menu is visible.
-// This step only prepares the menu permission; the real role page will come later.
-const ROLE_MANAGE_PERMISSION = 'role:manage'
-
-// allMenus is the complete frontend menu configuration.
-// permission is optional: menus without permission are visible to everyone.
-const allMenus = [
-  { key: 'home', label: '系统首页', permission: '' },
-  { key: 'users', label: '用户管理', permission: USER_READ_PERMISSION, active: true },
-  { key: 'roles', label: '角色管理', permission: ROLE_MANAGE_PERMISSION }
-]
-
 // hasPermission checks whether the current login user owns a permission code.
 // The frontend uses it to control button state, while the backend still does the real security check.
 function hasPermission(permissionCode) {
@@ -153,10 +141,6 @@ function hasPermission(permissionCode) {
 // canManageUsers controls whether the current login user can change user data.
 // It is calculated from the backend permission list instead of role text.
 const canManageUsers = computed(() => hasPermission(USER_WRITE_PERMISSION))
-
-// availableMenus filters menus by the current user's permissions.
-// After login, different roles can see different menu entries.
-const availableMenus = computed(() => allMenus.filter((menu) => !menu.permission || hasPermission(menu.permission)))
 
 /**
  * 请求后端健康检查接口，用来确认前后端是否已经连通。
@@ -270,6 +254,20 @@ async function loadStatusOptions() {
  * 这里故意请求 GET /api/users/{id}，不是直接用表格里的 user，
  * 是为了学习真实后台里“列表数据”和“详情数据”分开查询的写法。
  */
+/**
+ * Request sidebar menus visible to the current login user.
+ *
+ * The backend decides menu visibility, and the frontend only renders the returned list.
+ */
+async function loadMenus() {
+  if (!currentUser.value) {
+    menus.value = [{ key: 'home', label: '系统首页', active: false }]
+    return
+  }
+
+  menus.value = await apiGet('/api/auth/menus')
+}
+
 async function loadUserDetail(id) {
   detailLoading.value = true
   detailError.value = ''
@@ -381,7 +379,7 @@ async function login() {
   try {
     currentUser.value = await apiPost('/api/auth/login', loginForm)
     saveStoredLoginUser(currentUser.value)
-    await Promise.all([loadRoleOptions(), loadStatusOptions(), refreshUserData()])
+    await Promise.all([loadMenus(), loadRoleOptions(), loadStatusOptions(), refreshUserData()])
   } catch (error) {
     loginError.value = getApiErrorMessage(error, '登录请求失败，请确认 Java 后端已经启动')
   } finally {
@@ -452,6 +450,7 @@ function clearProtectedData() {
   userStats.value = null
   roleOptions.value = []
   statusOptions.value = []
+  menus.value = [{ key: 'home', label: '系统首页', active: false }]
   selectedUser.value = null
   userError.value = ''
   statsError.value = ''
@@ -643,7 +642,7 @@ function refreshPageData() {
     return Promise.all([loadBackendInfo()])
   }
 
-  return Promise.all([loadBackendInfo(), loadRoleOptions(), loadStatusOptions(), refreshUserData()])
+  return Promise.all([loadBackendInfo(), loadMenus(), loadRoleOptions(), loadStatusOptions(), refreshUserData()])
 }
 
 onMounted(async () => {
@@ -658,7 +657,7 @@ onMounted(async () => {
       <div class="brand">Admin Study</div>
       <nav class="menu">
         <span
-          v-for="menu in availableMenus"
+          v-for="menu in menus"
           :key="menu.key"
           class="menu-item"
           :class="{ active: menu.active }"

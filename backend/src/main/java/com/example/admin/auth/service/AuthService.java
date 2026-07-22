@@ -3,6 +3,7 @@ package com.example.admin.auth.service;
 import com.example.admin.auth.dto.LoginDTO;
 import com.example.admin.auth.constant.AuthPermissions;
 import com.example.admin.auth.vo.LoginVO;
+import com.example.admin.auth.vo.MenuVO;
 import com.example.admin.common.BusinessException;
 import com.example.admin.user.constant.UserConstants;
 import com.example.admin.user.entity.UserEntity;
@@ -10,6 +11,7 @@ import com.example.admin.user.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -80,5 +82,26 @@ public class AuthService {
                 AuthPermissions.canManageUsers(permissions),
                 authTokenService.createToken(user)
         );
+    }
+
+    /**
+     * Build sidebar menus from permission codes.
+     *
+     * The frontend no longer needs to hard-code permission rules for menus.
+     */
+    public List<MenuVO> listMenus(List<String> permissions) {
+        List<MenuVO> menus = new ArrayList<MenuVO>();
+
+        menus.add(new MenuVO("home", "系统首页", false));
+
+        if (permissions != null && permissions.contains(AuthPermissions.USER_READ)) {
+            menus.add(new MenuVO("users", "用户管理", false));
+        }
+
+        if (permissions != null && permissions.contains(AuthPermissions.ROLE_MANAGE)) {
+            menus.add(new MenuVO("roles", "角色管理", true));
+        }
+
+        return menus;
     }
 }

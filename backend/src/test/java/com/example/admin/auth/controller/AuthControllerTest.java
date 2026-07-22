@@ -128,6 +128,36 @@ class AuthControllerTest {
     }
 
     /**
+     * 超级管理员拥有用户管理和角色管理权限，所以菜单接口应该返回三个菜单。
+     */
+    @Test
+    void menusShouldReturnAllMenusForSuperAdmin() throws Exception {
+        mockMvc.perform(get("/api/auth/menus")
+                        .header("Authorization", loginAndGetAuthorizationHeader()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data", hasSize(3)))
+                .andExpect(jsonPath("$.data[0].key", is("home")))
+                .andExpect(jsonPath("$.data[1].key", is("users")))
+                .andExpect(jsonPath("$.data[1].active", is(true)))
+                .andExpect(jsonPath("$.data[2].key", is("roles")));
+    }
+
+    /**
+     * 运营管理员没有 role:manage 权限，所以不应该看到角色管理菜单。
+     */
+    @Test
+    void menusShouldHideRoleMenuForOperator() throws Exception {
+        mockMvc.perform(get("/api/auth/menus")
+                        .header("Authorization", loginAndGetAuthorizationHeader("manager")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[0].key", is("home")))
+                .andExpect(jsonPath("$.data[1].key", is("users")));
+    }
+
+    /**
      * 退出登录后，同一个 token 应该失效。
      */
     @Test
@@ -151,9 +181,16 @@ class AuthControllerTest {
      * 登录并返回 Authorization 请求头值。
      */
     private String loginAndGetAuthorizationHeader() throws Exception {
+        return loginAndGetAuthorizationHeader("admin");
+    }
+
+    /**
+     * 用指定账号登录，并返回 Authorization 请求头。
+     */
+    private String loginAndGetAuthorizationHeader(String username) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"123456\"}"))
+                        .content("{\"username\":\"" + username + "\",\"password\":\"123456\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andReturn();

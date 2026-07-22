@@ -4,6 +4,7 @@ import com.example.admin.auth.dto.LoginDTO;
 import com.example.admin.auth.service.AuthService;
 import com.example.admin.auth.service.AuthTokenService;
 import com.example.admin.auth.vo.LoginVO;
+import com.example.admin.auth.vo.MenuVO;
 import com.example.admin.common.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 认证接口入口。
@@ -64,6 +66,22 @@ public class AuthController {
         }
 
         return ApiResponse.success(loginUser);
+    }
+
+    /**
+     * 查询当前登录用户可见的菜单。
+     *
+     * 示例：GET /api/auth/menus
+     */
+    @GetMapping("/menus")
+    public ApiResponse<List<MenuVO>> listMenus(HttpServletRequest request) {
+        AuthTokenService.LoginUser loginUser = authTokenService.getLoginUser(request);
+
+        if (loginUser == null) {
+            return ApiResponse.error(401, "请先登录");
+        }
+
+        return ApiResponse.success(authService.listMenus(loginUser.getPermissions()));
     }
 
     /**
