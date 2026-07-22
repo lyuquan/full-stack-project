@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   apiDelete,
   apiGet,
@@ -10,6 +11,12 @@ import {
   getStoredLoginUser,
   saveStoredLoginUser
 } from './api'
+
+// route stores the current frontend URL information, such as /, /users or /roles.
+const route = useRoute()
+
+// router is used when JavaScript wants to change the browser URL.
+const router = useRouter()
 
 // loginLoading controls the login button loading state.
 const loginLoading = ref(false)
@@ -24,8 +31,8 @@ const currentUser = ref(null)
 // The backend decides which menu entries the current login user can see.
 const menus = ref([{ key: 'home', label: '系统首页', path: '/', active: true }])
 
-// currentMenuKey stores the menu selected on the frontend.
-// The backend returns which menus can be seen, but the frontend controls which one is currently active.
+// currentMenuKey stores the menu matched from the current browser URL.
+// The backend decides visible menus, and Vue Router decides which path is currently opened.
 const currentMenuKey = ref('home')
 
 // LOGIN_STORAGE_KEY 是保存登录用户的 localStorage key，刷新页面后还能找回登录状态。
@@ -277,7 +284,7 @@ async function loadStatusOptions() {
 async function loadMenus() {
   if (!currentUser.value) {
     menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
-    currentMenuKey.value = 'home'
+    syncCurrentMenuWithRoute()
     return
   }
 
@@ -294,24 +301,62 @@ async function loadMenus() {
 function normalizeCurrentMenu() {
   if (menus.value.length === 0) {
     currentMenuKey.value = 'home'
+    router.replace('/')
     return
   }
 
-  const exists = menus.value.some((menu) => menu.key === currentMenuKey.value)
+  const exists = menus.value.some((menu) => getMenuPath(menu) === route.path)
 
   if (!exists) {
-    currentMenuKey.value = menus.value[0].key
+    router.replace(getMenuPath(menus.value[0]))
+    return
   }
+
+  syncCurrentMenuWithRoute()
 }
 
 /**
  * Select a sidebar menu.
  *
- * This step only changes frontend view state. The path returned by the backend
- * is displayed in the page header first; later it can be connected to Vue Router.
+ * router.push changes the browser URL, and the watcher below will then update
+ * currentMenuKey from the new route path.
  */
 function selectMenu(menu) {
-  currentMenuKey.value = menu.key
+  router.push(getMenuPath(menu))
+}
+
+/**
+ * Return a usable route path for a menu.
+ *
+ * This fallback is useful while learning because the browser may still hold old
+ * menu data from a previous hot reload where path did not exist yet.
+ */
+function getMenuPath(menu) {
+  if (menu && menu.path) {
+    return menu.path
+  }
+
+  if (menu && menu.key === 'users') {
+    return '/users'
+  }
+
+  if (menu && menu.key === 'roles') {
+    return '/roles'
+  }
+
+  return '/'
+}
+
+/**
+ * Match the current browser path to a visible menu.
+ *
+ * Example: when route.path is /users, this method finds the menu whose path is
+ * /users and sets currentMenuKey to users.
+ */
+function syncCurrentMenuWithRoute() {
+  const matchedMenu = menus.value.find((menu) => getMenuPath(menu) === route.path)
+
+  currentMenuKey.value = matchedMenu ? matchedMenu.key : menus.value[0].key
 }
 
 async function loadUserDetail(id) {
@@ -497,7 +542,8 @@ function clearProtectedData() {
   roleOptions.value = []
   statusOptions.value = []
   menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
-  currentMenuKey.value = 'home'
+  router.replace('/')
+  syncCurrentMenuWithRoute()
   selectedUser.value = null
   userError.value = ''
   statsError.value = ''
@@ -696,6 +742,15 @@ onMounted(async () => {
   await restoreLoginUser()
   await refreshPageData()
 })
+
+// Keep menu highlight and page content synchronized with the browser URL.
+// This also makes manual address changes, such as typing /users, update the page.
+watch(
+  () => route.path,
+  () => {
+    normalizeCurrentMenu()
+  }
+)
 </script>
 
 <template>
