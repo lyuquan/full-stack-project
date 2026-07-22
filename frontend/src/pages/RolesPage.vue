@@ -15,7 +15,10 @@ defineProps({
   selectedRole: Object,
   roleForm: Object,
   roleSaveLoading: Boolean,
-  roleSaveMessage: String
+  roleSaveMessage: String,
+  isEditingRole: Boolean,
+  editingRoleCode: String,
+  roleDeleteLoadingCode: String
 })
 
 // Emits notify App.vue to run API requests or clear page state.
@@ -24,7 +27,9 @@ const emit = defineEmits([
   'loadRoleDetail',
   'clearRoleDetail',
   'saveRole',
-  'resetRoleForm'
+  'resetRoleForm',
+  'startEditRole',
+  'deleteRole'
 ])
 </script>
 
@@ -32,15 +37,21 @@ const emit = defineEmits([
   <section class="panel roles-panel">
     <div class="panel-header">
       <div>
-        <p class="eyebrow">POST /api/roles</p>
-        <h2>新增角色</h2>
+        <p class="eyebrow">
+          {{ isEditingRole ? `PUT /api/roles/${editingRoleCode}` : 'POST /api/roles' }}
+        </p>
+        <h2>{{ isEditingRole ? '编辑角色' : '新增角色' }}</h2>
       </div>
     </div>
 
     <form class="form-grid" @submit.prevent="emit('saveRole')">
       <label>
         <span>角色编码</span>
-        <input v-model="roleForm.code" placeholder="report_admin" />
+        <input
+          v-model="roleForm.code"
+          :disabled="isEditingRole"
+          placeholder="report_admin"
+        />
       </label>
 
       <label>
@@ -60,10 +71,10 @@ const emit = defineEmits([
 
       <div class="form-actions">
         <button class="submit-button" type="submit" :disabled="roleSaveLoading">
-          {{ roleSaveLoading ? '保存中...' : '新增角色' }}
+          {{ roleSaveLoading ? '保存中...' : isEditingRole ? '保存修改' : '新增角色' }}
         </button>
         <button class="secondary-button" type="button" @click="emit('resetRoleForm')">
-          清空
+          {{ isEditingRole ? '取消编辑' : '清空' }}
         </button>
       </div>
     </form>
@@ -106,13 +117,30 @@ const emit = defineEmits([
             <td>{{ role.description }}</td>
             <td>{{ role.permissionCount }}</td>
             <td>
-              <button
-                class="link-button"
-                type="button"
-                @click="emit('loadRoleDetail', role.code)"
-              >
-                查看
-              </button>
+              <div class="row-actions">
+                <button
+                  class="link-button"
+                  type="button"
+                  @click="emit('loadRoleDetail', role.code)"
+                >
+                  查看
+                </button>
+                <button
+                  class="link-button"
+                  type="button"
+                  @click="emit('startEditRole', role)"
+                >
+                  编辑
+                </button>
+                <button
+                  class="danger-link-button"
+                  type="button"
+                  :disabled="roleDeleteLoadingCode === role.code"
+                  @click="emit('deleteRole', role)"
+                >
+                  {{ roleDeleteLoadingCode === role.code ? '删除中...' : '删除' }}
+                </button>
+              </div>
             </td>
           </tr>
 

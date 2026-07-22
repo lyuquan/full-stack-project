@@ -2,11 +2,14 @@ package com.example.admin.role.controller;
 
 import com.example.admin.common.ApiResponse;
 import com.example.admin.role.dto.CreateRoleDTO;
+import com.example.admin.role.dto.UpdateRoleDTO;
 import com.example.admin.role.service.RoleService;
 import com.example.admin.role.vo.RoleVO;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -69,5 +72,42 @@ public class RoleController {
         RoleVO role = roleService.createRole(createRoleDTO);
 
         return ApiResponse.success(role);
+    }
+
+    /**
+     * Update one role by code.
+     *
+     * Example: PUT /api/roles/operator
+     */
+    @PutMapping("/{code}")
+    public ApiResponse<RoleVO> updateRole(
+            @PathVariable String code,
+            @Valid @RequestBody UpdateRoleDTO updateRoleDTO
+    ) {
+        RoleVO role = roleService.updateRole(code, updateRoleDTO);
+
+        if (role == null) {
+            return ApiResponse.error(404, "Role does not exist");
+        }
+
+        return ApiResponse.success(role);
+    }
+
+    /**
+     * Delete one role by code.
+     *
+     * Example: DELETE /api/roles/operator
+     *
+     * Delete success does not need to return role data, so data is null.
+     */
+    @DeleteMapping("/{code}")
+    public ApiResponse<Void> deleteRole(@PathVariable String code) {
+        boolean deleted = roleService.deleteRole(code);
+
+        if (!deleted) {
+            return ApiResponse.error(404, "Role does not exist");
+        }
+
+        return ApiResponse.success(null);
     }
 }

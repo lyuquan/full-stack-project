@@ -343,6 +343,18 @@ h2 {
   margin-top: 28px;
 }
 
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+input:disabled {
+  color: #64748b;
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+
 .form-message {
   margin-top: 14px;
 }

@@ -1695,3 +1695,63 @@ http://localhost:5173
 - `roleRepository.save(role)`：把角色实体保存进数据库。
 - `v-model="roleForm.code"`：前端输入框和表单对象双向绑定。
 - `emit('saveRole')`：页面组件通知 `App.vue` 去调用保存接口。
+
+### 第 41 步：编辑角色接口和前端编辑模式
+
+目标：在角色管理页面点击“编辑”，把角色数据回填到表单，提交后调用 `PUT /api/roles/{code}` 更新数据库。
+
+为什么要做这一步：
+
+- 后台系统里的数据通常都需要编辑能力，角色也一样。
+- `POST` 用于新增，`PUT` 通常用于更新一条已有数据。
+- 角色的 `code` 已经作为 URL 标识使用，例如 `/api/roles/operator`，所以这一步不允许编辑 `code`，只编辑名称、说明和权限数量。
+- 这样可以继续练习 `Controller -> Service -> Repository -> Database -> VO` 的完整更新流程。
+
+这一步新增或修改了什么：
+
+- `UpdateRoleDTO.java`：新增角色编辑请求对象，只接收允许修改的字段。
+- `RoleController.java`：新增 `PUT /api/roles/{code}`。
+- `RoleService.java`：新增 `updateRole`，根据 code 查角色，修改字段后保存。
+- `RoleControllerTest.java`：新增编辑成功、角色不存在、参数非法三个测试。
+- `App.vue`：新增角色编辑状态，`saveRole` 会根据模式自动选择 POST 或 PUT。
+- `RolesPage.vue`：角色表格新增“编辑”按钮，表单支持新增和编辑两种模式。
+- `style.css`：新增表格行操作按钮间距和禁用输入框样式。
+- `README.md`：记录第 41 步学习内容。
+
+你需要理解：
+
+- `PUT /api/roles/{code}`：按角色编码更新一个角色。
+- `UpdateRoleDTO`：编辑接口专用 DTO，不包含 `code`。
+- `@PathVariable String code`：从 URL 里读取要编辑哪个角色。
+- `roleRepository.findByCode(code)`：先查到数据库里的角色实体。
+- `roleRepository.save(role)`：保存修改后的角色实体。
+- `editingRoleCode`：前端记录当前正在编辑哪个角色。
+- `isEditingRole`：前端判断角色表单现在是新增模式还是编辑模式。
+### 第 42 步：删除角色接口和前端删除按钮
+
+目标：在角色管理表格里点击“删除”，调用后端 `DELETE /api/roles/{code}`，把数据库里的角色记录删除。
+
+为什么要做这一步：
+
+- 后台管理系统里的基础数据通常需要完整的增删改查能力，角色模块现在补齐“删除”动作。
+- `DELETE` 是 HTTP 里表达删除资源的常见方法，路径里的 `{code}` 表示删除哪一个角色。
+- 删除成功后不需要返回角色详情，所以后端返回 `ApiResponse<Void>`，最终 JSON 里的 `data` 是 `null`。
+- 前端删除后要刷新角色列表，并且如果当前正在查看或编辑这条角色，需要清空详情和表单，避免页面继续显示已删除数据。
+
+这一 新增或修改了什么：
+
+- `RoleController.java`：新增 `DELETE /api/roles/{code}` 接口入口，删除成功返回 `data: null`。
+- `RoleService.java`：新增 `deleteRole(code)`，先按 code 查询角色，存在才调用 Repository 删除。
+- `RoleControllerTest.java`：新增删除成功和删除不存在角色两个测试，确认接口行为稳定。
+- `App.vue`：新增 `roleDeleteLoadingCode` 和 `deleteRole(role)`，负责调用删除接口、刷新列表、清空相关状态。
+- `RolesPage.vue`：角色表格新增“删除”按钮，并在删除中禁用当前行按钮。
+- `README.md`：记录第 42 步的学习目标、接口和代码职责。
+
+你需要理解：
+
+- `@DeleteMapping("/{code}")`：匹配 `DELETE /api/roles/operator` 这种删除请求。
+- `@PathVariable String code`：从 URL 路径里拿到要删除的角色编码。
+- `Optional<RoleEntity>`：查询结果可能存在，也可能不存在，所以用 Optional 表达“不确定有没有”。
+- `roleRepository.delete(role)`：让 JPA 删除数据库里的这一行记录。
+- `ApiResponse<Void>`：表示成功响应没有业务数据，适合删除这类只需要告诉前端“成功了”的接口。
+- `roleDeleteLoadingCode`：前端记录当前哪一行正在删除，避免整张表都被锁住。

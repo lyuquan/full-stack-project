@@ -106,12 +106,17 @@ const roleForm = reactive({
 })
 const roleSaveLoading = ref(false)
 const roleSaveMessage = ref('')
+const editingRoleCode = ref('')
+const roleDeleteLoadingCode = ref('')
 
 // user:write is the backend permission code for changing user data.
 const USER_WRITE_PERMISSION = 'user:write'
 
 // isEditing decides whether the user form should create or update a user.
 const isEditing = computed(() => editingUserId.value !== null)
+
+// isEditingRole decides whether the role form should create or update a role.
+const isEditingRole = computed(() => editingRoleCode.value !== '')
 
 // totalPages keeps pagination display stable even when total is 0.
 const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagination.size)))
@@ -376,13 +381,23 @@ async function saveRole() {
   roleSaveMessage.value = ''
   roleError.value = ''
 
-  try {
-    const savedRole = await apiPost('/api/roles', {
-      ...roleForm,
-      permissionCount: Number(roleForm.permissionCount)
-    })
+  const payload = {
+    name: roleForm.name,
+    description: roleForm.description,
+    permissionCount: Number(roleForm.permissionCount)
+  }
 
-    roleSaveMessage.value = `已新增角色：${savedRole.name}`
+  try {
+    const savedRole = isEditingRole.value
+      ? await apiPut(`/api/roles/${editingRoleCode.value}`, payload)
+      : await apiPost('/api/roles', {
+          code: roleForm.code,
+          ...payload
+        })
+
+    roleSaveMessage.value = isEditingRole.value
+      ? `已更新角色：${savedRole.name}`
+      : `已新增角色：${savedRole.name}`
     selectedRole.value = savedRole
     resetRoleForm()
     await loadRoles()
@@ -397,10 +412,58 @@ async function saveRole() {
  * Reset the role form to empty create mode.
  */
 function resetRoleForm() {
+  editingRoleCode.value = ''
   roleForm.code = ''
   roleForm.name = ''
   roleForm.description = ''
   roleForm.permissionCount = 0
+}
+
+/**
+ * Put one table row into the role form for editing.
+ */
+function startEditRole(role) {
+  editingRoleCode.value = role.code
+  roleSaveMessage.value = ''
+  roleError.value = ''
+  roleForm.code = role.code
+  roleForm.name = role.name
+  roleForm.description = role.description
+  roleForm.permissionCount = role.permissionCount
+}
+
+/**
+ * Delete one role by code and refresh the role table.
+ */
+async function deleteRole(role) {
+  const confirmed = window.confirm(`确定删除角色“${role.name}”吗？`)
+
+  if (!confirmed) {
+    return
+  }
+
+  roleDeleteLoadingCode.value = role.code
+  roleSaveMessage.value = ''
+  roleError.value = ''
+
+  try {
+    await apiDelete(`/api/roles/${role.code}`)
+
+    if (editingRoleCode.value === role.code) {
+      resetRoleForm()
+    }
+
+    if (selectedRole.value && selectedRole.value.code === role.code) {
+      clearRoleDetail()
+    }
+
+    roleSaveMessage.value = `已删除角色：${role.name}`
+    await loadRoles()
+  } catch (error) {
+    roleError.value = getApiErrorMessage(error, '删除角色请求失败，请确认 Java 后端已经启动')
+  } finally {
+    roleDeleteLoadingCode.value = ''
+  }
 }
 
 /**
@@ -834,6 +897,9 @@ watch(
         :role-form="roleForm"
         :role-save-loading="roleSaveLoading"
         :role-save-message="roleSaveMessage"
+        :is-editing-role="isEditingRole"
+        :editing-role-code="editingRoleCode"
+        :role-delete-loading-code="roleDeleteLoadingCode"
         @load-user-stats="loadUserStats"
         @clear-user-detail="clearUserDetail"
         @submit-search="submitSearch"
@@ -852,6 +918,8 @@ watch(
         @clear-role-detail="clearRoleDetail"
         @save-role="saveRole"
         @reset-role-form="resetRoleForm"
+        @start-edit-role="startEditRole"
+        @delete-role="deleteRole"
       />
     </section>
   </main>

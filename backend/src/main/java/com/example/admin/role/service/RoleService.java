@@ -2,6 +2,7 @@ package com.example.admin.role.service;
 
 import com.example.admin.common.BusinessException;
 import com.example.admin.role.dto.CreateRoleDTO;
+import com.example.admin.role.dto.UpdateRoleDTO;
 import com.example.admin.role.entity.RoleEntity;
 import com.example.admin.role.repository.RoleRepository;
 import com.example.admin.role.vo.RoleVO;
@@ -78,6 +79,44 @@ public class RoleService {
         role.setPermissionCount(createRoleDTO.getPermissionCount());
 
         return toVO(roleRepository.save(role));
+    }
+
+    /**
+     * Update one existing role by code.
+     *
+     * Returning null means the URL code does not match any database row.
+     */
+    public RoleVO updateRole(String code, UpdateRoleDTO updateRoleDTO) {
+        Optional<RoleEntity> optionalRole = roleRepository.findByCode(code);
+
+        if (!optionalRole.isPresent()) {
+            return null;
+        }
+
+        RoleEntity role = optionalRole.get();
+        role.setName(updateRoleDTO.getName());
+        role.setDescription(updateRoleDTO.getDescription());
+        role.setPermissionCount(updateRoleDTO.getPermissionCount());
+
+        return toVO(roleRepository.save(role));
+    }
+
+    /**
+     * Delete one existing role by code.
+     *
+     * The method returns boolean because Controller only needs to know whether
+     * a row was deleted, not the deleted role content.
+     */
+    public boolean deleteRole(String code) {
+        Optional<RoleEntity> optionalRole = roleRepository.findByCode(code);
+
+        if (!optionalRole.isPresent()) {
+            return false;
+        }
+
+        roleRepository.delete(optionalRole.get());
+
+        return true;
     }
 
     /**
