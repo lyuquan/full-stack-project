@@ -1,45 +1,42 @@
 package com.example.admin.role.service;
 
+import com.example.admin.role.entity.RoleEntity;
+import com.example.admin.role.repository.RoleRepository;
 import com.example.admin.role.vo.RoleVO;
-import com.example.admin.user.constant.UserConstants;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Role business service.
  *
- * The project does not have a role table yet. This service returns fixed role
- * data first, then later we can replace the fixed list with database queries.
+ * Service handles role business logic and converts database entities into VO
+ * objects that are safe for the frontend page.
  */
 @Service
 public class RoleService {
 
     /**
+     * Role repository used to query the sys_role table.
+     */
+    private final RoleRepository roleRepository;
+
+    public RoleService(RoleRepository roleRepository) {
+        this.roleRepository = roleRepository;
+    }
+
+    /**
      * Query roles visible on the role management page.
      */
     public List<RoleVO> listRoles() {
+        List<RoleEntity> roleEntities = roleRepository.findAllByOrderByIdAsc();
         List<RoleVO> roles = new ArrayList<RoleVO>();
 
-        roles.add(new RoleVO(
-                "super_admin",
-                UserConstants.ROLE_SUPER_ADMIN,
-                "Owns user query, user write and role management permissions.",
-                3
-        ));
-        roles.add(new RoleVO(
-                "operator",
-                UserConstants.ROLE_OPERATOR,
-                "Can query user data but cannot change users or roles.",
-                1
-        ));
-        roles.add(new RoleVO(
-                "readonly",
-                UserConstants.ROLE_READONLY,
-                "Disabled demo account used to learn login status checks.",
-                0
-        ));
+        for (RoleEntity roleEntity : roleEntities) {
+            roles.add(toVO(roleEntity));
+        }
 
         return roles;
     }
@@ -52,14 +49,27 @@ public class RoleService {
      * into a unified 404 response for the frontend.
      */
     public RoleVO getRoleByCode(String code) {
-        List<RoleVO> roles = listRoles();
+        Optional<RoleEntity> role = roleRepository.findByCode(code);
 
-        for (RoleVO role : roles) {
-            if (role.getCode().equals(code)) {
-                return role;
-            }
+        if (!role.isPresent()) {
+            return null;
         }
 
-        return null;
+        return toVO(role.get());
+    }
+
+    /**
+     * Convert database entity to frontend view object.
+     *
+     * Keeping this conversion in Service means Controller does not need to know
+     * the database table structure.
+     */
+    private RoleVO toVO(RoleEntity roleEntity) {
+        return new RoleVO(
+                roleEntity.getCode(),
+                roleEntity.getName(),
+                roleEntity.getDescription(),
+                roleEntity.getPermissionCount()
+        );
     }
 }

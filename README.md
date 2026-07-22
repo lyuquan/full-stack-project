@@ -1634,3 +1634,31 @@ http://localhost:5173
 - `getRoleByCode`：Service 层业务方法，负责真正查找角色。
 - `selectedRole`：前端保存当前正在查看的角色详情。
 - `emit('loadRoleDetail', role.code)`：子组件告诉父组件“我要查这个角色详情”。
+
+### 第 39 步：角色数据接入 H2 数据库
+
+目标：把角色列表从 Java 代码里写死的数组，改成从 H2 数据库的 `sys_role` 表查询。
+
+为什么要做这一步：
+
+- 写死在 Java 代码里的角色，每次改数据都要改代码、重启后端。
+- 后台系统里的角色通常属于业务数据，应该存在数据库表里。
+- 这一步让角色模块也拥有完整的数据访问分层：`Controller -> Service -> Repository -> Database`。
+- 前端接口地址不用变，仍然调用 `GET /api/roles` 和 `GET /api/roles/{code}`，说明后端内部实现可以独立升级。
+
+这一步新增或修改了什么：
+
+- `RoleEntity.java`：新增角色数据库实体，映射 `sys_role` 表。
+- `RoleRepository.java`：新增角色数据库访问层，负责查角色表。
+- `RoleDataInitializer.java`：新增角色初始化器，数据库为空时插入三条演示角色。
+- `RoleService.java`：从“返回固定数组”改成“查询数据库，再把 Entity 转成 VO”。
+- `README.md`：记录第 39 步学习内容。
+
+你需要理解：
+
+- `@Entity`：告诉 JPA 这个 Java 类是一张数据库表。
+- `@Table(name = "sys_role")`：指定数据库表名是 `sys_role`。
+- `JpaRepository<RoleEntity, Long>`：第一个泛型是表对应的实体类，第二个泛型是主键 ID 类型。
+- `findByCode(code)`：Spring Data JPA 根据方法名自动生成查询 SQL。
+- `RoleDataInitializer`：后端启动后自动准备演示数据，避免你手动去 H2 插入角色。
+- `toVO(roleEntity)`：把数据库实体转换成前端展示对象，避免 Controller 直接暴露数据库结构。
