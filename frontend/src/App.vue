@@ -1,6 +1,15 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut, clearStoredLoginUser } from './api'
+import {
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  apiPut,
+  clearStoredLoginUser,
+  getStoredLoginUser,
+  saveStoredLoginUser
+} from './api'
 
 // loginLoading controls the login button loading state.
 const loginLoading = ref(false)
@@ -333,8 +342,8 @@ async function login() {
 
   try {
     currentUser.value = await apiPost('/api/auth/login', loginForm)
-    saveLoginUser(currentUser.value)
-    await refreshUserData()
+    saveStoredLoginUser(currentUser.value)
+    await Promise.all([loadRoleOptions(), loadStatusOptions(), refreshUserData()])
   } catch (error) {
     loginError.value = getApiErrorMessage(error, '登录请求失败，请确认 Java 后端已经启动')
   } finally {
@@ -364,24 +373,28 @@ async function logout() {
  *
  * localStorage 里的数据刷新页面后还在，所以可以用它恢复登录状态。
  */
-function saveLoginUser(user) {
-  localStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify(user))
-}
-
 /**
  * 页面打开时从 localStorage 恢复登录用户。
  */
-function restoreLoginUser() {
-  const savedUser = localStorage.getItem(LOGIN_STORAGE_KEY)
+async function restoreLoginUser() {
+  const savedUser = getStoredLoginUser()
 
   if (!savedUser) {
     return
   }
 
   try {
-    currentUser.value = JSON.parse(savedUser)
+    const loginUser = await apiGet('/api/auth/me')
+
+    currentUser.value = {
+      ...savedUser,
+      ...loginUser,
+      token: savedUser.token
+    }
+    saveStoredLoginUser(currentUser.value)
   } catch (error) {
-    localStorage.removeItem(LOGIN_STORAGE_KEY)
+    currentUser.value = null
+    clearStoredLoginUser()
   }
 }
 
@@ -399,9 +412,13 @@ function restoreLoginUser() {
 function clearProtectedData() {
   users.value = []
   userStats.value = null
+  roleOptions.value = []
+  statusOptions.value = []
   selectedUser.value = null
   userError.value = ''
   statsError.value = ''
+  roleOptionsError.value = ''
+  statusOptionsError.value = ''
   detailError.value = ''
 }
 
@@ -563,12 +580,17 @@ function refreshUserData() {
  * 同时刷新系统状态和用户列表。
  */
 function refreshPageData() {
-  Promise.all([loadBackendInfo(), loadRoleOptions(), loadStatusOptions(), refreshUserData()])
+  if (!currentUser.value) {
+    clearProtectedData()
+    return Promise.all([loadBackendInfo()])
+  }
+
+  return Promise.all([loadBackendInfo(), loadRoleOptions(), loadStatusOptions(), refreshUserData()])
 }
 
-onMounted(() => {
-  restoreLoginUser()
-  refreshPageData()
+onMounted(async () => {
+  await restoreLoginUser()
+  await refreshPageData()
 })
 </script>
 

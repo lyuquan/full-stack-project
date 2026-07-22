@@ -1145,6 +1145,44 @@ README.md
 
 注意：当前 `/me` 和 `/logout` 已经被登录拦截器保护。没有 token 或 token 已失效时，请求会直接返回 `401 请先登录`。
 
+### 第 28 步：刷新页面时校验登录状态
+
+目标：前端刷新页面时，不再只相信 `localStorage` 里的用户信息，而是先调用 `GET /api/auth/me` 让后端确认 token 是否仍然有效。
+
+为什么要做这一步：
+
+- 第 27 步已经有了 `/api/auth/me`，但前端刷新时还只是从 `localStorage` 直接恢复用户。
+- 现在 token 存在后端内存里，后端重启后 token 会丢失；浏览器里的旧 token 还在，但后端已经不认识它。
+- 所以刷新页面时要问后端：“这个 token 还有效吗？”有效才恢复登录，无效就清理本地登录状态。
+
+这一步新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/service/AuthTokenService.java
+backend/src/test/java/com/example/admin/auth/controller/AuthControllerTest.java
+frontend/src/api.js
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `AuthTokenService.java`：让 token 仓库里的登录用户信息增加 `nickname`，方便 `/api/auth/me` 返回完整展示信息。
+- `AuthControllerTest.java`：补充断言，确认登录接口和 `/api/auth/me` 都会返回 `nickname`。
+- `api.js`：新增并统一 `saveStoredLoginUser`、`getStoredLoginUser`、`clearStoredLoginUser`，集中管理浏览器登录缓存。
+- `App.vue`：页面打开时先读取本地 token，再调用 `/api/auth/me` 校验；token 有效才恢复登录并加载用户数据，token 无效就清理本地缓存。
+- `README.md`：记录第 28 步的学习目标和代码含义。
+
+你需要理解：
+
+- `localStorage` 只能说明浏览器曾经保存过 token，不能证明 token 现在还有效。
+- `/api/auth/me` 是“校验当前登录状态”的接口，前端刷新页面时很常用。
+- `await restoreLoginUser()`：页面初始化时先等待登录状态恢复完成，再决定是否请求用户管理接口。
+- `saveStoredLoginUser(currentUser.value)`：把后端确认后的用户信息重新保存一次，保证本地缓存是最新的。
+- 未登录时不请求 `/api/users/**`：因为这些接口已经被登录拦截器保护，没 token 请求只会得到 401。
+
+注意：这一步依然是学习版内存 token。真实项目里，如果用 JWT，刷新时也常常会用 `/me` 或类似接口确认当前用户信息和权限。
+
 ## 启动后端
 
 进入后端目录：

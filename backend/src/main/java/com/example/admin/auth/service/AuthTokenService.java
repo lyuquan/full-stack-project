@@ -41,7 +41,7 @@ public class AuthTokenService {
     public String createToken(UserEntity user) {
         String token = "study-token-" + user.getId() + "-" + UUID.randomUUID().toString();
 
-        tokenStore.put(token, new LoginUser(user.getId(), user.getUsername(), user.getRole()));
+        tokenStore.put(token, new LoginUser(user.getId(), user.getUsername(), user.getNickname(), user.getRole()));
 
         return token;
     }
@@ -114,11 +114,14 @@ public class AuthTokenService {
 
         private final String username;
 
+        private final String nickname;
+
         private final String role;
 
-        public LoginUser(Long id, String username, String role) {
+        public LoginUser(Long id, String username, String nickname, String role) {
             this.id = id;
             this.username = username;
+            this.nickname = nickname;
             this.role = role;
         }
 
@@ -128,6 +131,10 @@ public class AuthTokenService {
 
         public String getUsername() {
             return username;
+        }
+
+        public String getNickname() {
+            return nickname;
         }
 
         public String getRole() {

@@ -1,8 +1,7 @@
 /**
- * ApiError represents a backend business error.
+ * 后端业务错误。
  *
- * The request reached the backend successfully, but the backend returned
- * code !== 200, for example validation failed or the user does not exist.
+ * 请求已经到达后端，但后端返回 code !== 200 时，会抛出这个错误。
  */
 export class ApiError extends Error {
   constructor(message) {
@@ -14,27 +13,36 @@ export class ApiError extends Error {
 /**
  * 保存登录用户的 localStorage key。
  *
- * App.vue 负责写入，api.js 负责读取，这样后续请求可以自动带上 token。
+ * App.vue 负责写入登录用户，api.js 负责读取 token 并自动放到请求头里。
  */
 const LOGIN_STORAGE_KEY = 'admin-study-login-user'
 
 /**
- * 从 localStorage 读取登录 token。
+ * 保存登录用户到 localStorage。
  *
- * 如果本地数据格式不对，就返回空字符串，让页面继续按未登录处理。
+ * 登录成功后调用它，刷新页面后才能从浏览器里找回 token。
  */
-function getStoredToken() {
+export function saveStoredLoginUser(user) {
+  localStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify(user))
+}
+
+/**
+ * 从 localStorage 读取登录用户。
+ *
+ * 如果本地数据格式不对，就清理掉并返回 null。
+ */
+export function getStoredLoginUser() {
   const savedUser = localStorage.getItem(LOGIN_STORAGE_KEY)
 
   if (!savedUser) {
-    return ''
+    return null
   }
 
   try {
-    const user = JSON.parse(savedUser)
-    return user.token || ''
+    return JSON.parse(savedUser)
   } catch (error) {
-    return ''
+    clearStoredLoginUser()
+    return null
   }
 }
 
@@ -48,10 +56,20 @@ export function clearStoredLoginUser() {
 }
 
 /**
- * Send a request and unwrap the common ApiResponse structure.
+ * 从 localStorage 读取登录 token。
  *
- * Backend responses all look like { code, message, data }, so this helper
- * keeps App.vue from repeating response.json() and result.code checks.
+ * apiRequest 会用它自动给请求加 Authorization 请求头。
+ */
+function getStoredToken() {
+  const user = getStoredLoginUser()
+
+  return user ? user.token || '' : ''
+}
+
+/**
+ * 发送请求并拆开统一响应结构。
+ *
+ * 后端统一返回 { code, message, data }，所以这里集中处理 JSON 解析和业务错误判断。
  */
 async function apiRequest(url, options = {}) {
   const token = getStoredToken()
@@ -77,18 +95,18 @@ async function apiRequest(url, options = {}) {
 }
 
 /**
- * Send a GET request.
+ * 发送 GET 请求。
  *
- * GET is usually used for list/detail/options/statistics queries.
+ * GET 通常用于列表、详情、选项、统计等查询接口。
  */
 export function apiGet(url) {
   return apiRequest(url)
 }
 
 /**
- * Send a JSON request with a request body.
+ * 发送带 JSON 请求体的请求。
  *
- * POST/PUT/PATCH all need the same Content-Type and JSON.stringify logic.
+ * POST、PUT、PATCH 都需要设置 Content-Type，并把对象转成 JSON 字符串。
  */
 function apiJson(url, method, body) {
   return apiRequest(url, {
@@ -101,36 +119,36 @@ function apiJson(url, method, body) {
 }
 
 /**
- * Send a POST request.
+ * 发送 POST 请求。
  *
- * POST is usually used for creating new data.
+ * POST 通常用于新增数据、登录、退出等动作。
  */
 export function apiPost(url, body) {
   return apiJson(url, 'POST', body)
 }
 
 /**
- * Send a PUT request.
+ * 发送 PUT 请求。
  *
- * PUT is usually used for updating a whole record.
+ * PUT 通常用于完整更新一条记录。
  */
 export function apiPut(url, body) {
   return apiJson(url, 'PUT', body)
 }
 
 /**
- * Send a PATCH request.
+ * 发送 PATCH 请求。
  *
- * PATCH is usually used for updating only part of a record.
+ * PATCH 通常用于只更新一条记录里的部分字段。
  */
 export function apiPatch(url, body) {
   return apiJson(url, 'PATCH', body)
 }
 
 /**
- * Send a DELETE request.
+ * 发送 DELETE 请求。
  *
- * DELETE normally does not need a request body in this project.
+ * 这个项目里的删除接口暂时不需要请求体。
  */
 export function apiDelete(url) {
   return apiRequest(url, {

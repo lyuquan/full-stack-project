@@ -53,6 +53,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data.username", is("admin")))
+                .andExpect(jsonPath("$.data.nickname", is("系统管理员")))
                 .andExpect(jsonPath("$.data.role", is("超级管理员")))
                 .andExpect(jsonPath("$.data.token", startsWith("study-token-")));
     }
@@ -93,6 +94,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data.username", is("admin")))
+                .andExpect(jsonPath("$.data.nickname", is("系统管理员")))
                 .andExpect(jsonPath("$.data.role", is("超级管理员")));
     }
 
