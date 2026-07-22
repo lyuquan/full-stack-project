@@ -120,6 +120,14 @@ const isEditing = computed(() => editingUserId.value !== null)
 // totalPages 根据总条数和每页数量计算总页数，最少显示 1 页。
 const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagination.size)))
 
+// canManageUsers controls whether the current login user can change user data.
+// roleOptions[0] comes from GET /api/users/roles, and the backend keeps super admin as the first option.
+const canManageUsers = computed(() => {
+  const superAdminRole = roleOptions.value[0] && roleOptions.value[0].value
+
+  return Boolean(currentUser.value && superAdminRole && currentUser.value.role === superAdminRole)
+})
+
 /**
  * 请求后端健康检查接口，用来确认前后端是否已经连通。
  */
@@ -423,6 +431,11 @@ function clearProtectedData() {
 }
 
 async function saveUser() {
+  if (!canManageUsers.value) {
+    userError.value = '当前账号没有操作权限'
+    return
+  }
+
   saveLoading.value = true
   saveMessage.value = ''
   userError.value = ''
@@ -457,6 +470,11 @@ async function saveUser() {
  * 删除当前页最后一条数据后，当前页可能变空，所以会自动回到上一页再查一次。
  */
 async function deleteUser(user) {
+  if (!canManageUsers.value) {
+    userError.value = '当前账号没有操作权限'
+    return
+  }
+
   const confirmed = window.confirm(`确定删除用户“${user.nickname}”吗？`)
 
   if (!confirmed) {
@@ -498,6 +516,11 @@ async function deleteUser(user) {
  * 这里使用 PATCH /api/users/{id}/status，因为只修改 status 一个字段。
  */
 async function changeUserStatus(user) {
+  if (!canManageUsers.value) {
+    userError.value = '当前账号没有操作权限'
+    return
+  }
+
   const nextStatus = user.status === 'enabled' ? 'disabled' : 'enabled'
   const actionText = nextStatus === 'enabled' ? '启用' : '禁用'
   const confirmed = window.confirm(`确定${actionText}用户“${user.nickname}”吗？`)
@@ -533,6 +556,11 @@ async function changeUserStatus(user) {
  * 点击表格“编辑”按钮时，把当前行数据填回表单。
  */
 function startEdit(user) {
+  if (!canManageUsers.value) {
+    userError.value = '当前账号没有操作权限'
+    return
+  }
+
   editingUserId.value = user.id
   saveMessage.value = ''
   userError.value = ''
@@ -884,7 +912,7 @@ onMounted(async () => {
             </select>
           </label>
 
-          <button class="submit-button" type="submit" :disabled="saveLoading">
+          <button class="submit-button" type="submit" :disabled="saveLoading || !canManageUsers">
             {{ saveLoading ? '提交中...' : isEditing ? '保存修改' : '新增用户' }}
           </button>
         </form>
@@ -950,13 +978,18 @@ onMounted(async () => {
                       <button class="link-button" type="button" @click="loadUserDetail(user.id)">
                         查看
                       </button>
-                      <button class="link-button" type="button" @click="startEdit(user)">
+                      <button
+                        class="link-button"
+                        type="button"
+                        :disabled="!canManageUsers"
+                        @click="startEdit(user)"
+                      >
                         编辑
                       </button>
                       <button
                         class="link-button"
                         type="button"
-                        :disabled="statusLoadingId === user.id"
+                        :disabled="statusLoadingId === user.id || !canManageUsers"
                         @click="changeUserStatus(user)"
                       >
                         {{
@@ -970,7 +1003,7 @@ onMounted(async () => {
                       <button
                         class="danger-link-button"
                         type="button"
-                        :disabled="deleteLoadingId === user.id"
+                        :disabled="deleteLoadingId === user.id || !canManageUsers"
                         @click="deleteUser(user)"
                       >
                         {{ deleteLoadingId === user.id ? '删除中...' : '删除' }}

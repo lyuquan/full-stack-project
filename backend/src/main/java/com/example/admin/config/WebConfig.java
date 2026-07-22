@@ -1,5 +1,6 @@
 package com.example.admin.config;
 
+import com.example.admin.auth.interceptor.AdminPermissionInterceptor;
 import com.example.admin.auth.interceptor.LoginInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -18,8 +19,14 @@ public class WebConfig implements WebMvcConfigurer {
      */
     private final LoginInterceptor loginInterceptor;
 
-    public WebConfig(LoginInterceptor loginInterceptor) {
+    /**
+     * 管理员权限拦截器，用来限制用户管理的写操作。
+     */
+    private final AdminPermissionInterceptor adminPermissionInterceptor;
+
+    public WebConfig(LoginInterceptor loginInterceptor, AdminPermissionInterceptor adminPermissionInterceptor) {
         this.loginInterceptor = loginInterceptor;
+        this.adminPermissionInterceptor = adminPermissionInterceptor;
     }
 
     /**
@@ -38,6 +45,12 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/users/**",
                         "/api/auth/me",
                         "/api/auth/logout"
+                );
+
+        registry.addInterceptor(adminPermissionInterceptor)
+                .addPathPatterns(
+                        "/api/users",
+                        "/api/users/**"
                 );
     }
 }

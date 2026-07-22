@@ -1183,6 +1183,46 @@ README.md
 
 注意：这一步依然是学习版内存 token。真实项目里，如果用 JWT，刷新时也常常会用 `/me` 或类似接口确认当前用户信息和权限。
 
+### 第 29 步：管理员权限控制
+
+目标：在“已经登录”的基础上继续判断“有没有权限”。这一步规定：用户查询接口登录后都能看，但新增、编辑、启用禁用、删除用户这些写操作，只有超级管理员可以执行。
+
+为什么要做这一步：
+
+- 登录只能证明“你是谁”，不能证明“你能做什么”。
+- 后台管理系统通常会有不同角色，比如超级管理员、运营管理员、只读用户。
+- 前端隐藏按钮只是体验优化，真正的权限判断必须放在后端。
+- 如果普通用户直接用接口工具请求 `DELETE /api/users/1`，后端也应该能拦住。
+
+这一新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/interceptor/AdminPermissionInterceptor.java
+backend/src/main/java/com/example/admin/config/WebConfig.java
+backend/src/test/java/com/example/admin/user/controller/UserControllerTest.java
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `AdminPermissionInterceptor.java`：新增管理员权限拦截器。它会先判断请求方法，`GET` 查询请求直接放行；`POST`、`PUT`、`PATCH`、`DELETE` 写请求必须是超级管理员才放行，否则返回 `403 没有操作权限`。
+- `WebConfig.java`：把管理员权限拦截器注册到 `/api/users` 和 `/api/users/**`。这样用户管理接口会先经过登录拦截器，再经过权限拦截器。
+- `UserControllerTest.java`：新增权限测试。超级管理员删除不存在的用户会进入 Controller 并返回业务 `404`；运营管理员会在权限拦截器处直接返回 HTTP `403`。
+- `App.vue`：新增 `canManageUsers` 计算属性，用当前登录用户角色判断是否可以操作用户数据；普通角色登录后，新增、编辑、启用禁用、删除按钮会被禁用。
+- `README.md`：记录第 29 步的学习目标、改动文件和代码含义。
+
+你需要理解：
+
+- `401 Unauthorized`：没有登录，或者 token 无效。
+- `403 Forbidden`：已经登录了，但当前角色没有权限执行这个操作。
+- `HandlerInterceptor`：Spring MVC 的拦截器，可以在请求进入 Controller 前统一做登录、权限、日志等处理。
+- `request.getMethod()`：读取 HTTP 请求方法，比如 `GET`、`POST`、`PUT`、`PATCH`、`DELETE`。
+- `UserConstants.ROLE_SUPER_ADMIN.equals(loginUser.getRole())`：判断当前登录用户是不是超级管理员。
+- 权限判断要放在后端：前端可以禁用按钮，但不能作为安全边界。
+
+注意：这一步还是学习版权限控制。真实项目里通常会用 Spring Security、权限注解、菜单权限、按钮权限、接口权限表等更完整的方案。我们现在先用拦截器把核心思想跑通。
+
 ## 启动后端
 
 进入后端目录：

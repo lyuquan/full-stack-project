@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -119,10 +120,44 @@ class UserControllerTest {
     /**
      * 先调用登录接口，再从返回 JSON 里取出 token。
      */
+    /**
+     * 超级管理员访问写操作时，应该能通过权限拦截器继续进入 Controller。
+     *
+     * 这里故意删除一个不存在的 ID：如果返回 404 业务错误，说明权限层已经放行了。
+     */
+    @Test
+    void writeUserApiShouldAllowSuperAdmin() throws Exception {
+        mockMvc.perform(delete("/api/users/9999")
+                        .header("Authorization", getAuthorizationHeader()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(404)));
+    }
+
+    /**
+     * 运营管理员已经登录了，但不是超级管理员，所以不能执行用户写操作。
+     */
+    @Test
+    void writeUserApiShouldRejectNonSuperAdmin() throws Exception {
+        mockMvc.perform(delete("/api/users/9999")
+                        .header("Authorization", getAuthorizationHeader("manager")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code", is(403)))
+                .andExpect(jsonPath("$.message", is("没有操作权限")));
+    }
+
     private String getAuthorizationHeader() throws Exception {
+        return getAuthorizationHeader("admin");
+    }
+
+    /**
+     * 按指定账号登录并拼出 Authorization 请求头。
+     *
+     * 账号不同，token 对应的角色也不同，所以权限测试可以复用这个方法。
+     */
+    private String getAuthorizationHeader(String username) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"123456\"}"))
+                        .content("{\"username\":\"" + username + "\",\"password\":\"123456\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(200)))
                 .andReturn();
