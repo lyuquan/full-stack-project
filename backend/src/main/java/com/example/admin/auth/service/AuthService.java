@@ -72,6 +72,7 @@ public class AuthService {
                 user.getUsername(),
                 user.getNickname(),
                 user.getRole(),
+                UserConstants.ROLE_SUPER_ADMIN.equals(user.getRole()),
                 authTokenService.createToken(user)
         );
     }

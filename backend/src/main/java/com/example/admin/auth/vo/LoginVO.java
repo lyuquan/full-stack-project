@@ -28,6 +28,14 @@ public class LoginVO {
     private String role;
 
     /**
+     * Whether the logged-in user can manage user data.
+     *
+     * The frontend can use this field to enable or disable user action buttons
+     * without guessing permission from role text.
+     */
+    private Boolean canManageUsers;
+
+    /**
      * 登录成功后返回给前端的学习版 token。
      *
      * 前端会保存这个值，用来刷新页面后恢复登录状态。
@@ -37,11 +45,12 @@ public class LoginVO {
     public LoginVO() {
     }
 
-    public LoginVO(Long id, String username, String nickname, String role, String token) {
+    public LoginVO(Long id, String username, String nickname, String role, Boolean canManageUsers, String token) {
         this.id = id;
         this.username = username;
         this.nickname = nickname;
         this.role = role;
+        this.canManageUsers = canManageUsers;
         this.token = token;
     }
 
@@ -75,6 +84,14 @@ public class LoginVO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Boolean getCanManageUsers() {
+        return canManageUsers;
+    }
+
+    public void setCanManageUsers(Boolean canManageUsers) {
+        this.canManageUsers = canManageUsers;
     }
 
     public String getToken() {

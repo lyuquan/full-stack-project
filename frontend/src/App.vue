@@ -121,12 +121,8 @@ const isEditing = computed(() => editingUserId.value !== null)
 const totalPages = computed(() => Math.max(1, Math.ceil(pagination.total / pagination.size)))
 
 // canManageUsers controls whether the current login user can change user data.
-// roleOptions[0] comes from GET /api/users/roles, and the backend keeps super admin as the first option.
-const canManageUsers = computed(() => {
-  const superAdminRole = roleOptions.value[0] && roleOptions.value[0].value
-
-  return Boolean(currentUser.value && superAdminRole && currentUser.value.role === superAdminRole)
-})
+// The value comes from the backend, so the frontend does not need to guess permission from role text.
+const canManageUsers = computed(() => Boolean(currentUser.value && currentUser.value.canManageUsers))
 
 /**
  * 请求后端健康检查接口，用来确认前后端是否已经连通。

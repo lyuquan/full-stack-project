@@ -1223,6 +1223,46 @@ README.md
 
 注意：这一步还是学习版权限控制。真实项目里通常会用 Spring Security、权限注解、菜单权限、按钮权限、接口权限表等更完整的方案。我们现在先用拦截器把核心思想跑通。
 
+### 第 30 步：登录用户返回权限能力
+
+目标：让登录接口和当前用户接口直接返回 `canManageUsers`，前端根据这个布尔值控制用户管理按钮，而不是自己猜哪个角色能操作。
+
+为什么要做这一步：
+
+- 第 29 步前端通过角色判断是否能操作用户，但角色文字只是身份，不应该让前端自己推导权限。
+- 后端才是权限规则的来源，所以应该由后端告诉前端“当前用户能不能管理用户”。
+- 前端拿到 `canManageUsers: true/false` 后，按钮显示逻辑会更简单，也更接近真实项目。
+
+这一新增或修改了什么：
+
+```text
+backend/src/main/java/com/example/admin/auth/vo/LoginVO.java
+backend/src/main/java/com/example/admin/auth/service/AuthService.java
+backend/src/main/java/com/example/admin/auth/service/AuthTokenService.java
+backend/src/test/java/com/example/admin/auth/controller/AuthControllerTest.java
+frontend/src/App.vue
+README.md
+```
+
+每个文件的作用：
+
+- `LoginVO.java`：登录成功返回给前端的数据里新增 `canManageUsers` 字段，表示当前用户是否可以管理用户数据。
+- `AuthService.java`：登录时根据用户角色计算 `canManageUsers`。现在超级管理员返回 `true`，其他角色返回 `false`。
+- `AuthTokenService.java`：把 `canManageUsers` 也保存到内存 token 仓库里，所以 `/api/auth/me` 刷新登录状态时也能返回权限能力。
+- `AuthControllerTest.java`：新增断言，确认登录接口和 `/api/auth/me` 都返回 `canManageUsers: true`。
+- `App.vue`：前端的 `canManageUsers` 计算属性改为直接读取 `currentUser.canManageUsers`，不再依赖角色下拉选项。
+- `README.md`：记录第 30 步的学习目标和代码含义。
+
+你需要理解：
+
+- `role`：用户角色，比如超级管理员、运营管理员、只读用户。
+- `canManageUsers`：权限能力，表示“能不能管理用户”。
+- 角色不等于权限：一个角色可以拥有多个权限，一个权限也可以分配给多个角色。
+- 前端适合根据权限字段控制按钮显示；后端必须继续用拦截器做真正的权限校验。
+- 布尔值字段适合命名成 `canXxx`，比如 `canManageUsers`、`canDeleteOrder`、`canViewReport`。
+
+注意：这一步只是把一个权限能力写死在代码里。真实项目里，权限通常来自数据库权限表、角色权限关联表，或者 Spring Security 的权限体系。
+
 ## 启动后端
 
 进入后端目录：

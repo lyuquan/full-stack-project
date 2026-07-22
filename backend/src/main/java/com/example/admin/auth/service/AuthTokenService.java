@@ -1,6 +1,7 @@
 package com.example.admin.auth.service;
 
 import com.example.admin.user.entity.UserEntity;
+import com.example.admin.user.constant.UserConstants;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -41,7 +42,13 @@ public class AuthTokenService {
     public String createToken(UserEntity user) {
         String token = "study-token-" + user.getId() + "-" + UUID.randomUUID().toString();
 
-        tokenStore.put(token, new LoginUser(user.getId(), user.getUsername(), user.getNickname(), user.getRole()));
+        tokenStore.put(token, new LoginUser(
+                user.getId(),
+                user.getUsername(),
+                user.getNickname(),
+                user.getRole(),
+                UserConstants.ROLE_SUPER_ADMIN.equals(user.getRole())
+        ));
 
         return token;
     }
@@ -118,11 +125,14 @@ public class AuthTokenService {
 
         private final String role;
 
-        public LoginUser(Long id, String username, String nickname, String role) {
+        private final Boolean canManageUsers;
+
+        public LoginUser(Long id, String username, String nickname, String role, Boolean canManageUsers) {
             this.id = id;
             this.username = username;
             this.nickname = nickname;
             this.role = role;
+            this.canManageUsers = canManageUsers;
         }
 
         public Long getId() {
@@ -139,6 +149,10 @@ public class AuthTokenService {
 
         public String getRole() {
             return role;
+        }
+
+        public Boolean getCanManageUsers() {
+            return canManageUsers;
         }
     }
 }
