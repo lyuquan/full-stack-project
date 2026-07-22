@@ -1820,3 +1820,37 @@ http://localhost:5173
 - `validatePermissionCodes()`：后端校验前端传来的权限编码必须存在，不能相信前端。
 - `joinPermissionCodes()`：把数组转成数据库里保存的字符串。
 - `splitPermissionCodes()`：把数据库字符串转回前端更好用的数组。
+
+### 第 45 步：登录权限读取角色表
+
+目标：用户登录时，不再只按 Java 代码写死的角色规则返回权限，而是优先读取 `sys_role.permission_codes`。
+
+为什么要做这一步：
+
+- 第 44 步已经能在角色管理页保存权限，如果登录仍然按代码写死返回权限，页面上勾选权限就只是“存起来”，不会真正影响登录用户。
+- 后台系统的常见链路是：用户属于某个角色，角色拥有一组权限，登录成功后把这组权限放进 token 或会话。
+- 这一步让“角色分配权限”接入登录流程，后面才能继续做更真实的按钮权限、接口权限和菜单权限。
+- token 里保存的是登录当时的权限快照，所以修改角色权限后，用户需要退出并重新登录，才能拿到最新权限。
+
+这一 新增或修改了什么：
+
+- `RoleRepository.java`：新增 `findByName(name)`，用于根据用户表里的角色名称查询角色记录。
+- `RoleSchemaInitializer.java`：新增旧数据库修复器，如果本地 H2 旧表缺少 `permission_codes` 列，启动时自动补上。
+- `AuthService.java`：新增 `RoleRepository` 依赖，登录时先查角色表，再把 `permissionCodes` 转成权限列表。
+- `AuthService.java`：新增 `listPermissionsByUserRole()`，把“根据角色找权限”的逻辑单独放出来，避免登录方法越来越长。
+- `AuthService.java`：新增 `splitPermissionCodes()`，把数据库里的 `"user:read,role:manage"` 转成 Java 里的 `List<String>`。
+- `AuthTokenService.java`：`createToken()` 改成接收 `permissions` 参数，token 服务只保存权限快照，不再自己决定角色有哪些权限。
+- `AuthControllerTest.java`：新增测试，创建临时角色和临时用户，验证登录返回的权限确实来自角色表。
+- `README.md`：记录第 45 步学习内容。
+
+你需要理解：
+
+- `UserEntity.role`：现在保存的是角色显示名称，例如“超级管理员”。
+- `RoleEntity.name`：角色表里的显示名称，登录时用它和 `UserEntity.role` 对应起来。
+- `RoleEntity.permissionCodes`：角色拥有的权限编码字符串，例如 `"user:read,role:manage"`。
+- `roleRepository.findByName(roleName)`：按角色名称查角色表，Spring Data JPA 会根据方法名自动生成查询。
+- `Optional<RoleEntity>`：角色可能查得到，也可能查不到，所以用 Optional 表达这种不确定。
+- `AuthPermissions.listByRole(roleName)`：现在只作为兜底逻辑，如果旧数据还没有角色记录，就按旧规则返回权限，避免账号突然无法正常登录。
+- `authTokenService.createToken(user, permissions)`：创建 token 时，把登录服务算好的权限一起保存进去。
+- `登录权限快照`：用户登录时拿到一份权限，之后角色权限如果被修改，旧 token 不会自动变化，需要重新登录。
+- `RoleSchemaInitializer`：解决本地旧 H2 数据库表结构跟不上新代码的问题，属于学习项目里的简易数据库迁移。

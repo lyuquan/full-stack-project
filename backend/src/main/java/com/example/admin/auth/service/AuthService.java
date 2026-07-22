@@ -6,6 +6,8 @@ import com.example.admin.auth.vo.LoginVO;
 import com.example.admin.auth.vo.MenuVO;
 import com.example.admin.auth.vo.PermissionVO;
 import com.example.admin.common.BusinessException;
+import com.example.admin.role.entity.RoleEntity;
+import com.example.admin.role.repository.RoleRepository;
 import com.example.admin.user.constant.UserConstants;
 import com.example.admin.user.entity.UserEntity;
 import com.example.admin.user.repository.UserRepository;
@@ -13,6 +15,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +34,13 @@ public class AuthService {
     private final UserRepository userRepository;
 
     /**
+     * 角色数据库访问对象。
+     *
+     * 登录时要根据用户角色名称查询角色表，再读取这个角色拥有的权限编码。
+     */
+    private final RoleRepository roleRepository;
+
+    /**
      * BCrypt 密码工具，用来校验用户输入的明文密码和数据库里的密文是否匹配。
      */
     private final BCryptPasswordEncoder passwordEncoder;
@@ -41,10 +52,12 @@ public class AuthService {
 
     public AuthService(
             UserRepository userRepository,
+            RoleRepository roleRepository,
             BCryptPasswordEncoder passwordEncoder,
             AuthTokenService authTokenService
     ) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.authTokenService = authTokenService;
     }
@@ -72,7 +85,7 @@ public class AuthService {
             throw new BusinessException(400, "账号已被禁用");
         }
 
-        List<String> permissions = AuthPermissions.listByRole(user.getRole());
+        List<String> permissions = listPermissionsByUserRole(user.getRole());
 
         return new LoginVO(
                 user.getId(),
@@ -81,8 +94,38 @@ public class AuthService {
                 user.getRole(),
                 permissions,
                 AuthPermissions.canManageUsers(permissions),
-                authTokenService.createToken(user)
+                authTokenService.createToken(user, permissions)
         );
+    }
+
+    /**
+     * 根据用户角色名称查询权限。
+     *
+     * 当前学习项目里，UserEntity.role 保存的是角色显示名称，例如“超级管理员”。
+     * 所以这里先按 name 查询 sys_role，再读取 sys_role.permission_codes。
+     */
+    private List<String> listPermissionsByUserRole(String roleName) {
+        Optional<RoleEntity> optionalRole = roleRepository.findByName(roleName);
+
+        if (optionalRole.isPresent()) {
+            return splitPermissionCodes(optionalRole.get().getPermissionCodes());
+        }
+
+        // 兜底逻辑：如果旧数据里还没有角色表记录，先按原来的 Java 常量规则返回权限，避免老账号无法登录。
+        return AuthPermissions.listByRole(roleName);
+    }
+
+    /**
+     * 把数据库里的逗号分隔字符串转成权限编码列表。
+     *
+     * 例如 "user:read,role:manage" 会变成 ["user:read", "role:manage"]。
+     */
+    private List<String> splitPermissionCodes(String permissionCodes) {
+        if (permissionCodes == null || permissionCodes.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.asList(permissionCodes.split(","));
     }
 
     /**

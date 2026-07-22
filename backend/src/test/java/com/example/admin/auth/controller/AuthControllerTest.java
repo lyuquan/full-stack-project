@@ -1,6 +1,11 @@
 package com.example.admin.auth.controller;
 
 import com.example.admin.auth.constant.AuthPermissions;
+import com.example.admin.role.entity.RoleEntity;
+import com.example.admin.role.repository.RoleRepository;
+import com.example.admin.user.constant.UserConstants;
+import com.example.admin.user.entity.UserEntity;
+import com.example.admin.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -8,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -45,6 +51,24 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
 
     /**
+     * RoleRepository is used here to prepare a custom role for the login test.
+     */
+    @Autowired
+    private RoleRepository roleRepository;
+
+    /**
+     * UserRepository is used here to prepare a custom user for the login test.
+     */
+    @Autowired
+    private UserRepository userRepository;
+
+    /**
+     * Password encoder must match the real login service.
+     */
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
+    /**
      * 启用状态的演示用户，应该可以用默认密码登录成功。
      */
     @Test
@@ -78,6 +102,43 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.username", is("manager")))
                 .andExpect(jsonPath("$.data.permissions", hasSize(1)))
                 .andExpect(jsonPath("$.data.permissions[0]", is(AuthPermissions.USER_READ)))
+                .andExpect(jsonPath("$.data.canManageUsers", is(false)))
+                .andExpect(jsonPath("$.data.token", startsWith("study-token-")));
+    }
+
+    /**
+     * 登录权限应该从角色表读取。
+     *
+     * 这个测试新建一个临时角色和临时用户。如果 AuthService 仍然按 Java 代码写死权限，
+     * 这个临时角色就拿不到 role:manage，测试会失败。
+     */
+    @Test
+    void loginShouldReadPermissionsFromRoleTable() throws Exception {
+        RoleEntity role = new RoleEntity();
+        role.setCode("login_permission_role");
+        role.setName("登录权限角色");
+        role.setDescription("测试登录是否读取角色表权限");
+        role.setPermissionCodes(AuthPermissions.USER_READ + "," + AuthPermissions.ROLE_MANAGE);
+        role.setPermissionCount(2);
+        roleRepository.save(role);
+
+        UserEntity user = new UserEntity();
+        user.setUsername("permission_login_user");
+        user.setNickname("权限登录用户");
+        user.setPassword(passwordEncoder.encode("123456"));
+        user.setRole("登录权限角色");
+        user.setStatus(UserConstants.STATUS_ENABLED);
+        userRepository.save(user);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"permission_login_user\",\"password\":\"123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data.username", is("permission_login_user")))
+                .andExpect(jsonPath("$.data.permissions", hasSize(2)))
+                .andExpect(jsonPath("$.data.permissions[0]", is(AuthPermissions.USER_READ)))
+                .andExpect(jsonPath("$.data.permissions[1]", is(AuthPermissions.ROLE_MANAGE)))
                 .andExpect(jsonPath("$.data.canManageUsers", is(false)))
                 .andExpect(jsonPath("$.data.token", startsWith("study-token-")));
     }

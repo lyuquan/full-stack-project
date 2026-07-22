@@ -26,6 +26,14 @@ public interface RoleRepository extends JpaRepository<RoleEntity, Long> {
     Optional<RoleEntity> findByCode(String code);
 
     /**
+     * Query one role by its display name.
+     *
+     * UserEntity.role currently stores this display name, so login needs this
+     * method to find the role row and read its permission codes.
+     */
+    Optional<RoleEntity> findByName(String name);
+
+    /**
      * Check whether one role code already exists.
      */
     boolean existsByCode(String code);

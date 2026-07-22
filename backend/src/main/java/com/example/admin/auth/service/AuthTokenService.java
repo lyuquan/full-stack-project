@@ -39,10 +39,12 @@ public class AuthTokenService {
 
     /**
      * 登录成功后创建 token。
+     *
+     * permissions 由 AuthService 根据当前用户角色算好后传进来。
+     * token 服务只负责保存本次登录的用户快照，不再自己决定角色有哪些权限。
      */
-    public String createToken(UserEntity user) {
+    public String createToken(UserEntity user, List<String> permissions) {
         String token = "study-token-" + user.getId() + "-" + UUID.randomUUID().toString();
-        List<String> permissions = AuthPermissions.listByRole(user.getRole());
 
         tokenStore.put(token, new LoginUser(
                 user.getId(),
