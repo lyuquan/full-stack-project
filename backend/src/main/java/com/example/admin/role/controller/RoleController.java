@@ -2,11 +2,13 @@ package com.example.admin.role.controller;
 
 import com.example.admin.common.ApiResponse;
 import com.example.admin.role.dto.CreateRoleDTO;
+import com.example.admin.role.dto.UpdateRolePermissionsDTO;
 import com.example.admin.role.dto.UpdateRoleDTO;
 import com.example.admin.role.service.RoleService;
 import com.example.admin.role.vo.RoleVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -109,5 +111,24 @@ public class RoleController {
         }
 
         return ApiResponse.success(null);
+    }
+
+    /**
+     * Replace permissions owned by one role.
+     *
+     * Example: PATCH /api/roles/operator/permissions
+     */
+    @PatchMapping("/{code}/permissions")
+    public ApiResponse<RoleVO> updateRolePermissions(
+            @PathVariable String code,
+            @Valid @RequestBody UpdateRolePermissionsDTO updateRolePermissionsDTO
+    ) {
+        RoleVO role = roleService.updateRolePermissions(code, updateRolePermissionsDTO);
+
+        if (role == null) {
+            return ApiResponse.error(404, "Role does not exist");
+        }
+
+        return ApiResponse.success(role);
     }
 }

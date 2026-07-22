@@ -1,16 +1,22 @@
 package com.example.admin.role.service;
 
 import com.example.admin.common.BusinessException;
+import com.example.admin.auth.constant.AuthPermissions;
 import com.example.admin.role.dto.CreateRoleDTO;
 import com.example.admin.role.dto.UpdateRoleDTO;
+import com.example.admin.role.dto.UpdateRolePermissionsDTO;
 import com.example.admin.role.entity.RoleEntity;
 import com.example.admin.role.repository.RoleRepository;
 import com.example.admin.role.vo.RoleVO;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Role business service.
@@ -77,6 +83,7 @@ public class RoleService {
         role.setName(createRoleDTO.getName());
         role.setDescription(createRoleDTO.getDescription());
         role.setPermissionCount(createRoleDTO.getPermissionCount());
+        role.setPermissionCodes("");
 
         return toVO(roleRepository.save(role));
     }
@@ -97,6 +104,29 @@ public class RoleService {
         role.setName(updateRoleDTO.getName());
         role.setDescription(updateRoleDTO.getDescription());
         role.setPermissionCount(updateRoleDTO.getPermissionCount());
+
+        return toVO(roleRepository.save(role));
+    }
+
+    /**
+     * Replace permissions owned by one role.
+     *
+     * This method uses PATCH semantics because it only updates the permission
+     * part of the role, not the whole role record.
+     */
+    public RoleVO updateRolePermissions(String code, UpdateRolePermissionsDTO updateRolePermissionsDTO) {
+        Optional<RoleEntity> optionalRole = roleRepository.findByCode(code);
+
+        if (!optionalRole.isPresent()) {
+            return null;
+        }
+
+        List<String> permissionCodes = updateRolePermissionsDTO.getPermissionCodes();
+        validatePermissionCodes(permissionCodes);
+
+        RoleEntity role = optionalRole.get();
+        role.setPermissionCodes(joinPermissionCodes(permissionCodes));
+        role.setPermissionCount(permissionCodes.size());
 
         return toVO(roleRepository.save(role));
     }
@@ -130,7 +160,44 @@ public class RoleService {
                 roleEntity.getCode(),
                 roleEntity.getName(),
                 roleEntity.getDescription(),
-                roleEntity.getPermissionCount()
+                roleEntity.getPermissionCount(),
+                splitPermissionCodes(roleEntity.getPermissionCodes())
         );
+    }
+
+    /**
+     * Make sure every submitted permission code exists in the backend
+     * permission dictionary.
+     */
+    private void validatePermissionCodes(List<String> permissionCodes) {
+        Set<String> allowedCodes = new HashSet<String>(AuthPermissions.listAllCodes());
+
+        for (String permissionCode : permissionCodes) {
+            if (!allowedCodes.contains(permissionCode)) {
+                throw new BusinessException(400, "Permission code does not exist: " + permissionCode);
+            }
+        }
+    }
+
+    /**
+     * Convert checkbox-selected permission codes into database text.
+     */
+    private String joinPermissionCodes(List<String> permissionCodes) {
+        if (permissionCodes.isEmpty()) {
+            return "";
+        }
+
+        return String.join(",", permissionCodes);
+    }
+
+    /**
+     * Convert database text into a frontend-friendly list.
+     */
+    private List<String> splitPermissionCodes(String permissionCodes) {
+        if (permissionCodes == null || permissionCodes.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.asList(permissionCodes.split(","));
     }
 }

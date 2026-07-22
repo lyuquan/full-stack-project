@@ -33,6 +33,16 @@ public final class AuthPermissions {
     }
 
     /**
+     * List every permission code supported by this learning project.
+     *
+     * Other modules use this method to validate frontend-submitted permission
+     * codes before saving them.
+     */
+    public static List<String> listAllCodes() {
+        return Arrays.asList(USER_READ, USER_WRITE, ROLE_MANAGE);
+    }
+
+    /**
      * Build permission codes by role.
      *
      * Super admin owns read and write permissions.

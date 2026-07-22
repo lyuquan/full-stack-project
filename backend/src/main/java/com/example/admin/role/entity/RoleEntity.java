@@ -54,6 +54,15 @@ public class RoleEntity {
     private Integer permissionCount;
 
     /**
+     * Comma-separated permission codes owned by this role.
+     *
+     * This is a learning-friendly storage shape. Later we can replace it with
+     * a real many-to-many table such as sys_role_permission.
+     */
+    @Column(length = 200)
+    private String permissionCodes;
+
+    /**
      * Time when this role row was created.
      */
     @Column(nullable = false)
@@ -121,6 +130,14 @@ public class RoleEntity {
 
     public void setPermissionCount(Integer permissionCount) {
         this.permissionCount = permissionCount;
+    }
+
+    public String getPermissionCodes() {
+        return permissionCodes;
+    }
+
+    public void setPermissionCodes(String permissionCodes) {
+        this.permissionCodes = permissionCodes;
     }
 
     public LocalDateTime getCreatedAt() {

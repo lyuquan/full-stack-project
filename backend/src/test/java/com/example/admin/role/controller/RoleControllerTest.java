@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -83,7 +84,8 @@ class RoleControllerTest {
                 .andExpect(jsonPath("$.code", is(200)))
                 .andExpect(jsonPath("$.data.code", is("operator")))
                 .andExpect(jsonPath("$.data.name", is(UserConstants.ROLE_OPERATOR)))
-                .andExpect(jsonPath("$.data.permissionCount", is(1)));
+                .andExpect(jsonPath("$.data.permissionCount", is(1)))
+                .andExpect(jsonPath("$.data.permissionCodes[0]", is("user:read")));
     }
 
     /**
@@ -229,6 +231,58 @@ class RoleControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code", is(404)))
                 .andExpect(jsonPath("$.message", is("Role does not exist")));
+    }
+
+    /**
+     * Logged-in users can replace permissions owned by one role.
+     */
+    @Test
+    void updateRolePermissionsShouldReplacePermissionCodes() throws Exception {
+        mockMvc.perform(post("/api/roles")
+                        .header("Authorization", getAuthorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"permission_target\",\"name\":\"Permission Target\",\"description\":\"Role prepared for permission test.\",\"permissionCount\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)));
+
+        mockMvc.perform(patch("/api/roles/permission_target/permissions")
+                        .header("Authorization", getAuthorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"permissionCodes\":[\"user:read\",\"role:manage\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data.code", is("permission_target")))
+                .andExpect(jsonPath("$.data.permissionCount", is(2)))
+                .andExpect(jsonPath("$.data.permissionCodes[0]", is("user:read")))
+                .andExpect(jsonPath("$.data.permissionCodes[1]", is("role:manage")));
+    }
+
+    /**
+     * Updating permissions for an unknown role should return 404.
+     */
+    @Test
+    void updateRolePermissionsShouldReturn404WhenRoleNotFound() throws Exception {
+        mockMvc.perform(patch("/api/roles/unknown/permissions")
+                        .header("Authorization", getAuthorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"permissionCodes\":[\"user:read\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(404)))
+                .andExpect(jsonPath("$.message", is("Role does not exist")));
+    }
+
+    /**
+     * Backend validation should reject permission codes outside the dictionary.
+     */
+    @Test
+    void updateRolePermissionsShouldReturn400WhenPermissionCodeIsUnknown() throws Exception {
+        mockMvc.perform(patch("/api/roles/operator/permissions")
+                        .header("Authorization", getAuthorizationHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"permissionCodes\":[\"unknown:permission\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(400)))
+                .andExpect(jsonPath("$.message", is("Permission code does not exist: unknown:permission")));
     }
 
     private String getAuthorizationHeader() throws Exception {

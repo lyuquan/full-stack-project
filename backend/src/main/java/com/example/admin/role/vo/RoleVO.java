@@ -1,5 +1,7 @@
 package com.example.admin.role.vo;
 
+import java.util.List;
+
 /**
  * Role data returned to the frontend role management page.
  *
@@ -28,14 +30,22 @@ public class RoleVO {
      */
     private Integer permissionCount;
 
+    /**
+     * Permission codes owned by this role.
+     *
+     * The frontend uses this list to check permission checkboxes.
+     */
+    private List<String> permissionCodes;
+
     public RoleVO() {
     }
 
-    public RoleVO(String code, String name, String description, Integer permissionCount) {
+    public RoleVO(String code, String name, String description, Integer permissionCount, List<String> permissionCodes) {
         this.code = code;
         this.name = name;
         this.description = description;
         this.permissionCount = permissionCount;
+        this.permissionCodes = permissionCodes;
     }
 
     public String getCode() {
@@ -68,5 +78,13 @@ public class RoleVO {
 
     public void setPermissionCount(Integer permissionCount) {
         this.permissionCount = permissionCount;
+    }
+
+    public List<String> getPermissionCodes() {
+        return permissionCodes;
+    }
+
+    public void setPermissionCodes(List<String> permissionCodes) {
+        this.permissionCodes = permissionCodes;
     }
 }

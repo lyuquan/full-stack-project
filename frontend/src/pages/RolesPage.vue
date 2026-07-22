@@ -19,6 +19,7 @@ defineProps({
   isEditingRole: Boolean,
   editingRoleCode: String,
   roleDeleteLoadingCode: String,
+  rolePermissionSaveLoading: Boolean,
   permissionLoading: Boolean,
   permissionError: String,
   permissions: Array
@@ -33,7 +34,8 @@ const emit = defineEmits([
   'resetRoleForm',
   'startEditRole',
   'deleteRole',
-  'loadPermissions'
+  'loadPermissions',
+  'saveRolePermissions'
 ])
 </script>
 
@@ -72,6 +74,35 @@ const emit = defineEmits([
         <span>角色说明</span>
         <input v-model="roleForm.description" placeholder="用于说明这个角色能做什么" />
       </label>
+
+      <fieldset v-if="isEditingRole" class="wide-field checkbox-field">
+        <legend>角色权限</legend>
+        <div class="checkbox-grid">
+          <label
+            v-for="permission in permissions"
+            :key="permission.code"
+            class="checkbox-card"
+          >
+            <input
+              v-model="roleForm.permissionCodes"
+              type="checkbox"
+              :value="permission.code"
+            />
+            <span>
+              <strong>{{ permission.name }}</strong>
+              <small>{{ permission.code }}</small>
+            </span>
+          </label>
+        </div>
+        <button
+          class="secondary-button"
+          type="button"
+          :disabled="rolePermissionSaveLoading"
+          @click="emit('saveRolePermissions')"
+        >
+          {{ rolePermissionSaveLoading ? '保存权限中...' : '保存权限' }}
+        </button>
+      </fieldset>
 
       <div class="form-actions">
         <button class="submit-button" type="submit" :disabled="roleSaveLoading">
@@ -230,6 +261,16 @@ const emit = defineEmits([
         <dl>
           <dt>权限数量</dt>
           <dd>{{ selectedRole.permissionCount }}</dd>
+        </dl>
+        <dl>
+          <dt>权限编码</dt>
+          <dd>
+            {{
+              selectedRole.permissionCodes && selectedRole.permissionCodes.length > 0
+                ? selectedRole.permissionCodes.join(', ')
+                : '无'
+            }}
+          </dd>
         </dl>
         <dl>
           <dt>角色说明</dt>

@@ -107,12 +107,14 @@ const roleForm = reactive({
   code: '',
   name: '',
   description: '',
-  permissionCount: 0
+  permissionCount: 0,
+  permissionCodes: []
 })
 const roleSaveLoading = ref(false)
 const roleSaveMessage = ref('')
 const editingRoleCode = ref('')
 const roleDeleteLoadingCode = ref('')
+const rolePermissionSaveLoading = ref(false)
 
 // user:write is the backend permission code for changing user data.
 const USER_WRITE_PERMISSION = 'user:write'
@@ -446,6 +448,7 @@ function resetRoleForm() {
   roleForm.name = ''
   roleForm.description = ''
   roleForm.permissionCount = 0
+  roleForm.permissionCodes = []
 }
 
 /**
@@ -459,6 +462,37 @@ function startEditRole(role) {
   roleForm.name = role.name
   roleForm.description = role.description
   roleForm.permissionCount = role.permissionCount
+  roleForm.permissionCodes = role.permissionCodes ? [...role.permissionCodes] : []
+}
+
+/**
+ * Save permission checkbox selections for the role currently being edited.
+ */
+async function saveRolePermissions() {
+  if (!isEditingRole.value) {
+    roleError.value = '请先选择一个角色进行编辑'
+    return
+  }
+
+  rolePermissionSaveLoading.value = true
+  roleSaveMessage.value = ''
+  roleError.value = ''
+
+  try {
+    const savedRole = await apiPatch(`/api/roles/${editingRoleCode.value}/permissions`, {
+      permissionCodes: roleForm.permissionCodes
+    })
+
+    roleForm.permissionCount = savedRole.permissionCount
+    roleForm.permissionCodes = savedRole.permissionCodes ? [...savedRole.permissionCodes] : []
+    selectedRole.value = savedRole
+    roleSaveMessage.value = `已保存角色权限：${savedRole.name}`
+    await loadRoles()
+  } catch (error) {
+    roleError.value = getApiErrorMessage(error, '保存角色权限请求失败，请确认 Java 后端已经启动')
+  } finally {
+    rolePermissionSaveLoading.value = false
+  }
 }
 
 /**
@@ -938,6 +972,7 @@ watch(
         :is-editing-role="isEditingRole"
         :editing-role-code="editingRoleCode"
         :role-delete-loading-code="roleDeleteLoadingCode"
+        :role-permission-save-loading="rolePermissionSaveLoading"
         :permission-loading="permissionLoading"
         :permission-error="permissionError"
         :permissions="permissions"
@@ -962,6 +997,7 @@ watch(
         @start-edit-role="startEditRole"
         @delete-role="deleteRole"
         @load-permissions="loadPermissions"
+        @save-role-permissions="saveRolePermissions"
       />
     </section>
   </main>

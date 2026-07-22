@@ -1787,3 +1787,36 @@ http://localhost:5173
 - `GET /api/auth/permissions`：查询系统有哪些权限，不修改数据。
 - `PermissionVO`：返回给前端展示的权限对象，不是数据库表。
 - `loadPermissions()`：前端请求权限字典，并把结果放进 `permissions`，页面再用 `v-for` 渲染。
+
+### 第 44 步：给角色分配权限
+
+目标：在角色管理页编辑角色时，可以勾选权限并调用 `PATCH /api/roles/{code}/permissions` 保存。
+
+为什么要做这一步：
+
+- 角色的核心作用是把多个权限打包起来，例如“运营管理员”可以查看用户，但不能删除用户。
+- `PUT /api/roles/{code}` 已经负责编辑角色基本信息，这一步用 `PATCH` 单独更新权限，更容易理解“局部更新”。
+- 这一步先把权限编码用逗号分隔字符串存在 `sys_role.permission_codes`，后面再升级成真正的角色权限关系表。
+- 保存权限时后端会自动同步 `permissionCount`，前端不用手动计算权限数量。
+
+这一 新增或修改了什么：
+
+- `AuthPermissions.java`：新增 `listAllCodes()`，提供后端允许保存的权限编码清单。
+- `RoleEntity.java`：新增 `permissionCodes` 字段，暂时用字符串保存角色拥有的权限编码。
+- `RoleVO.java`：新增 `permissionCodes` 列表，方便前端用复选框回显。
+- `UpdateRolePermissionsDTO.java`：新增权限分配请求对象，只接收 `permissionCodes`。
+- `RoleService.java`：新增 `updateRolePermissions()`，校验权限编码、保存权限、同步权限数量。
+- `RoleController.java`：新增 `PATCH /api/roles/{code}/permissions` 接口。
+- `RoleControllerTest.java`：新增权限分配成功、角色不存在、权限编码非法三个测试。
+- `App.vue`：新增 `saveRolePermissions()`，调用 PATCH 接口保存当前编辑角色的权限。
+- `RolesPage.vue`：编辑角色时新增权限复选框，并在详情里展示角色权限编码。
+- `style.css`：新增权限复选框区域样式。
+
+你需要理解：
+
+- `PATCH`：通常表示只修改一部分字段，这里只修改角色权限。
+- `permissionCodes`：前端复选框选中的权限编码数组，例如 `["user:read", "role:manage"]`。
+- `UpdateRolePermissionsDTO`：专门接收权限分配请求，避免和编辑角色名称的 DTO 混在一起。
+- `validatePermissionCodes()`：后端校验前端传来的权限编码必须存在，不能相信前端。
+- `joinPermissionCodes()`：把数组转成数据库里保存的字符串。
+- `splitPermissionCodes()`：把数据库字符串转回前端更好用的数组。

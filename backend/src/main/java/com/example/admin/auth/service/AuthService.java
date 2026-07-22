@@ -115,6 +115,7 @@ public class AuthService {
     public List<PermissionVO> listPermissions() {
         List<PermissionVO> permissions = new ArrayList<PermissionVO>();
 
+        // Each permission code here must also exist in AuthPermissions.listAllCodes().
         permissions.add(new PermissionVO(
                 AuthPermissions.USER_READ,
                 "查看用户",
