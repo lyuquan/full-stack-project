@@ -5,6 +5,7 @@ import com.example.admin.auth.service.AuthService;
 import com.example.admin.auth.service.AuthTokenService;
 import com.example.admin.auth.vo.LoginVO;
 import com.example.admin.auth.vo.MenuVO;
+import com.example.admin.auth.vo.PermissionVO;
 import com.example.admin.common.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -82,6 +83,25 @@ public class AuthController {
         }
 
         return ApiResponse.success(authService.listMenus(loginUser.getPermissions()));
+    }
+
+    /**
+     * Query all permission definitions.
+     *
+     * Example: GET /api/auth/permissions
+     *
+     * This is a dictionary endpoint. It tells the frontend which permission
+     * codes exist before we learn how to assign permissions to roles.
+     */
+    @GetMapping("/permissions")
+    public ApiResponse<List<PermissionVO>> listPermissions(HttpServletRequest request) {
+        AuthTokenService.LoginUser loginUser = authTokenService.getLoginUser(request);
+
+        if (loginUser == null) {
+            return ApiResponse.error(401, "请先登录");
+        }
+
+        return ApiResponse.success(authService.listPermissions());
     }
 
     /**

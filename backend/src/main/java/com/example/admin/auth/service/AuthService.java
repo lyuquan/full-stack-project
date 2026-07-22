@@ -4,6 +4,7 @@ import com.example.admin.auth.dto.LoginDTO;
 import com.example.admin.auth.constant.AuthPermissions;
 import com.example.admin.auth.vo.LoginVO;
 import com.example.admin.auth.vo.MenuVO;
+import com.example.admin.auth.vo.PermissionVO;
 import com.example.admin.common.BusinessException;
 import com.example.admin.user.constant.UserConstants;
 import com.example.admin.user.entity.UserEntity;
@@ -103,5 +104,33 @@ public class AuthService {
         }
 
         return menus;
+    }
+
+    /**
+     * Query all permission definitions used by this learning project.
+     *
+     * For now permissions are a code dictionary in Java. Later we can move
+     * them into database tables such as sys_permission and sys_role_permission.
+     */
+    public List<PermissionVO> listPermissions() {
+        List<PermissionVO> permissions = new ArrayList<PermissionVO>();
+
+        permissions.add(new PermissionVO(
+                AuthPermissions.USER_READ,
+                "查看用户",
+                "允许查看用户列表、详情和统计数据"
+        ));
+        permissions.add(new PermissionVO(
+                AuthPermissions.USER_WRITE,
+                "管理用户",
+                "允许新增、编辑、启用、禁用和删除用户"
+        ));
+        permissions.add(new PermissionVO(
+                AuthPermissions.ROLE_MANAGE,
+                "管理角色",
+                "允许查看角色管理菜单并维护角色数据"
+        ));
+
+        return permissions;
     }
 }

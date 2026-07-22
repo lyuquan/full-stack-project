@@ -163,6 +163,33 @@ class AuthControllerTest {
     }
 
     /**
+     * Logged-in users can query the permission dictionary.
+     */
+    @Test
+    void permissionsShouldReturnPermissionListWhenLoggedIn() throws Exception {
+        mockMvc.perform(get("/api/auth/permissions")
+                        .header("Authorization", loginAndGetAuthorizationHeader()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is(200)))
+                .andExpect(jsonPath("$.data", hasSize(3)))
+                .andExpect(jsonPath("$.data[0].code", is(AuthPermissions.USER_READ)))
+                .andExpect(jsonPath("$.data[0].name", is("查看用户")))
+                .andExpect(jsonPath("$.data[1].code", is(AuthPermissions.USER_WRITE)))
+                .andExpect(jsonPath("$.data[2].code", is(AuthPermissions.ROLE_MANAGE)));
+    }
+
+    /**
+     * Permission dictionary is protected by the login interceptor.
+     */
+    @Test
+    void permissionsShouldRequireLoginToken() throws Exception {
+        mockMvc.perform(get("/api/auth/permissions"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code", is(401)))
+                .andExpect(jsonPath("$.message", is("请先登录")));
+    }
+
+    /**
      * 退出登录后，同一个 token 应该失效。
      */
     @Test

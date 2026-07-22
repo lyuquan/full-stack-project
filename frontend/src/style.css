@@ -343,6 +343,16 @@ h2 {
   margin-top: 28px;
 }
 
+.permission-panel {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.compact-table {
+  min-width: 640px;
+}
+
 .row-actions {
   display: flex;
   align-items: center;

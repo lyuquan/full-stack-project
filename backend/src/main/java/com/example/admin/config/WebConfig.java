@@ -47,6 +47,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/roles/**",
                         "/api/auth/me",
                         "/api/auth/menus",
+                        "/api/auth/permissions",
                         "/api/auth/logout"
                 );
 

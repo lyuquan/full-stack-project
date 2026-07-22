@@ -97,6 +97,11 @@ const roleDetailLoading = ref(false)
 const roleDetailError = ref('')
 const selectedRole = ref(null)
 
+// permission dictionary state: data returned by GET /api/auth/permissions.
+const permissionLoading = ref(false)
+const permissionError = ref('')
+const permissions = ref([])
+
 // role form state: used by POST /api/roles to create a new role.
 const roleForm = reactive({
   code: '',
@@ -341,6 +346,30 @@ async function loadRoleDetail(code) {
 }
 
 /**
+ * Load all permission definitions.
+ *
+ * This is only a dictionary list in this step. Later the role page can use it
+ * as checkbox options when assigning permissions to one role.
+ */
+async function loadPermissions() {
+  if (!currentUser.value) {
+    permissions.value = []
+    return
+  }
+
+  permissionLoading.value = true
+  permissionError.value = ''
+
+  try {
+    permissions.value = await apiGet('/api/auth/permissions')
+  } catch (error) {
+    permissionError.value = getApiErrorMessage(error, '无法连接权限字典接口，请确认 Java 后端已经启动')
+  } finally {
+    permissionLoading.value = false
+  }
+}
+
+/**
  * Load a single user detail by id.
  */
 async function loadUserDetail(id) {
@@ -571,6 +600,7 @@ function clearProtectedData() {
   roleOptions.value = []
   statusOptions.value = []
   roles.value = []
+  permissions.value = []
   menus.value = [{ key: 'home', label: '系统首页', path: '/', active: true }]
   selectedUser.value = null
   selectedRole.value = null
@@ -582,6 +612,7 @@ function clearProtectedData() {
   detailError.value = ''
   roleError.value = ''
   roleDetailError.value = ''
+  permissionError.value = ''
   roleSaveMessage.value = ''
   router.replace('/')
 }
@@ -761,7 +792,14 @@ function refreshUserData() {
  * Load data that requires a login token.
  */
 function loadProtectedData() {
-  return Promise.all([loadMenus(), loadRoleOptions(), loadStatusOptions(), loadRoles(), refreshUserData()])
+  return Promise.all([
+    loadMenus(),
+    loadRoleOptions(),
+    loadStatusOptions(),
+    loadRoles(),
+    loadPermissions(),
+    refreshUserData()
+  ])
 }
 
 /**
@@ -900,6 +938,9 @@ watch(
         :is-editing-role="isEditingRole"
         :editing-role-code="editingRoleCode"
         :role-delete-loading-code="roleDeleteLoadingCode"
+        :permission-loading="permissionLoading"
+        :permission-error="permissionError"
+        :permissions="permissions"
         @load-user-stats="loadUserStats"
         @clear-user-detail="clearUserDetail"
         @submit-search="submitSearch"
@@ -920,6 +961,7 @@ watch(
         @reset-role-form="resetRoleForm"
         @start-edit-role="startEditRole"
         @delete-role="deleteRole"
+        @load-permissions="loadPermissions"
       />
     </section>
   </main>

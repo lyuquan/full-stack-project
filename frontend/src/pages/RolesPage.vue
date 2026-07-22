@@ -18,7 +18,10 @@ defineProps({
   roleSaveMessage: String,
   isEditingRole: Boolean,
   editingRoleCode: String,
-  roleDeleteLoadingCode: String
+  roleDeleteLoadingCode: String,
+  permissionLoading: Boolean,
+  permissionError: String,
+  permissions: Array
 })
 
 // Emits notify App.vue to run API requests or clear page state.
@@ -29,7 +32,8 @@ const emit = defineEmits([
   'saveRole',
   'resetRoleForm',
   'startEditRole',
-  'deleteRole'
+  'deleteRole',
+  'loadPermissions'
 ])
 </script>
 
@@ -82,6 +86,47 @@ const emit = defineEmits([
     <p v-if="roleSaveMessage" class="status success form-message">
       {{ roleSaveMessage }}
     </p>
+
+    <section class="permission-panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">GET /api/auth/permissions</p>
+          <h2>权限字典</h2>
+        </div>
+        <button class="secondary-button" type="button" @click="emit('loadPermissions')">
+          刷新权限
+        </button>
+      </div>
+
+      <p v-if="permissionLoading" class="status muted">正在请求权限字典...</p>
+
+      <p v-else-if="permissionError" class="status error">
+        {{ permissionError }}
+      </p>
+
+      <div v-else class="table-wrap">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>权限编码</th>
+              <th>权限名称</th>
+              <th>权限说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="permission in permissions" :key="permission.code">
+              <td>{{ permission.code }}</td>
+              <td>{{ permission.name }}</td>
+              <td>{{ permission.description }}</td>
+            </tr>
+
+            <tr v-if="permissions.length === 0">
+              <td class="empty-cell" colspan="3">没有权限数据</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <div class="panel-header role-list-header">
       <div>

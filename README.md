@@ -1755,3 +1755,35 @@ http://localhost:5173
 - `roleRepository.delete(role)`：让 JPA 删除数据库里的这一行记录。
 - `ApiResponse<Void>`：表示成功响应没有业务数据，适合删除这类只需要告诉前端“成功了”的接口。
 - `roleDeleteLoadingCode`：前端记录当前哪一行正在删除，避免整张表都被锁住。
+- `roleDeleteLoadingCode`：前端记录当前哪一行正在删除，避免整张表都被锁住。
+
+### 第 43 步：权限字典接口和角色页权限列表
+
+目标：新增 `GET /api/auth/permissions`，让前端角色管理页可以看到系统里有哪些权限编码。
+
+为什么要做这一步：
+
+- 权限是后台系统的核心概念，角色真正有价值，是因为角色会绑定一组权限。
+- 在做“角色分配权限”之前，前端需要先知道系统里有哪些权限可以选。
+- 这一小步先做“权限字典查询”，不直接做勾选保存，学习节奏更稳。
+- 现在权限仍然写在 Java 常量里，后面可以继续升级成数据库表。
+
+这一 新增或修改了什么：
+
+- `PermissionVO.java`：新增权限返回对象，包含 `code`、`name`、`description`。
+- `AuthService.java`：新增 `listPermissions()`，把系统权限常量组装成前端可展示的列表。
+- `AuthController.java`：新增 `GET /api/auth/permissions` 接口。
+- `WebConfig.java`：把 `/api/auth/permissions` 加入登录拦截器，未登录不能访问。
+- `AuthControllerTest.java`：新增权限字典接口测试，覆盖登录成功访问和未登录拦截。
+- `App.vue`：新增 `permissions`、`permissionLoading`、`permissionError` 和 `loadPermissions()`。
+- `RolesPage.vue`：新增“权限字典”表格，展示权限编码、名称、说明。
+- `style.css`：新增权限字典区域和紧凑表格样式。
+
+你需要理解：
+
+- `权限编码`：例如 `user:read`，后端和前端都用它判断能不能做某个动作。
+- `权限名称`：给人看的名字，例如“查看用户”。
+- `权限说明`：解释这个权限具体允许做什么。
+- `GET /api/auth/permissions`：查询系统有哪些权限，不修改数据。
+- `PermissionVO`：返回给前端展示的权限对象，不是数据库表。
+- `loadPermissions()`：前端请求权限字典，并把结果放进 `permissions`，页面再用 `v-for` 渲染。
